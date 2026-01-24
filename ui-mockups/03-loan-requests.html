@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Requests - Legal Opinion Platform</title>
+    <style>
+        :root {
+            --primary-color: #004C8F;
+            --bg-color: #f3f4f6;
+            --sidebar-bg: #1e293b;
+            --card-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--primary-color); }
+        .nav-icon { width: 20px; height: 20px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .content-area { padding: 32px; flex: 1; overflow-y: auto; }
+        
+        .filters-bar { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+        .search-box { flex: 1; min-width: 250px; position: relative; }
+        .search-box input { width: 100%; padding: 10px 16px 10px 40px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
+        .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .filter-select { padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; background: white; min-width: 150px; }
+        
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
+        th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; }
+        td { font-size: 14px; color: var(--text-primary); }
+        tr:hover { background: #f9fafb; }
+        
+        .ref-number { font-weight: 600; color: var(--primary-color); }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-review { background: #dbeafe; color: #1e40af; }
+        .badge-draft { background: #f3e8ff; color: #7c3aed; }
+        .badge-completed { background: #dcfce7; color: #166534; }
+        .badge-high { background: #fee2e2; color: #991b1b; }
+        .badge-normal { background: #e5e7eb; color: #374151; }
+        
+        .borrower-info { display: flex; flex-direction: column; }
+        .borrower-name { font-weight: 500; }
+        .borrower-id { font-size: 12px; color: var(--text-secondary); }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btn { padding: 6px 12px; font-size: 13px; border-radius: 6px; background: var(--bg-color); color: var(--text-primary); border: none; cursor: pointer; }
+        .action-btn:hover { background: #e5e7eb; }
+        .action-btn.primary { background: var(--primary-color); color: white; }
+        
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--border-color); }
+        .pagination-info { font-size: 14px; color: var(--text-secondary); }
+        .pagination-btns { display: flex; gap: 8px; }
+        .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 8px; background: white; cursor: pointer; font-size: 14px; }
+        .page-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">HDFC BANK</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="#" class="nav-item active">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Loan Requests
+            </a>
+            <a href="07-opinion-editor.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Opinions
+            </a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <h1 class="page-title">Loan Requests</h1>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline">Export</button>
+                <button class="btn btn-primary">+ New Request</button>
+            </div>
+        </header>
+        
+        <div class="content-area">
+            <div class="filters-bar">
+                <div class="search-box">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" placeholder="Search by reference, borrower name...">
+                </div>
+                <select class="filter-select">
+                    <option>All Status</option>
+                    <option>Pending</option>
+                    <option>In Review</option>
+                    <option>Draft</option>
+                    <option>Completed</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Loan Types</option>
+                    <option>Home Loan</option>
+                    <option>LAP</option>
+                    <option>Commercial</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Priority</option>
+                    <option>High</option>
+                    <option>Normal</option>
+                    <option>Low</option>
+                </select>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Borrower</th>
+                            <th>Loan Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Assigned To</th>
+                            <th>Due Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="ref-number">REQ-2024-0127</span></td>
+                            <td>
+                                <div class="borrower-info">
+                                    <span class="borrower-name">Rajesh Kumar</span>
+                                    <span class="borrower-id">HDFC001234</span>
+                                </div>
+                            </td>
+                            <td>Home Loan</td>
+                            <td>₹45,00,000</td>
+                            <td><span class="badge badge-review">In Review</span></td>
+                            <td><span class="badge badge-high">High</span></td>
+                            <td>Adv. John Doe</td>
+                            <td>Jan 26, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="04-loan-request-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="ref-number">REQ-2024-0126</span></td>
+                            <td>
+                                <div class="borrower-info">
+                                    <span class="borrower-name">Priya Sharma</span>
+                                    <span class="borrower-id">HDFC001233</span>
+                                </div>
+                            </td>
+                            <td>LAP</td>
+                            <td>₹75,00,000</td>
+                            <td><span class="badge badge-draft">Draft</span></td>
+                            <td><span class="badge badge-high">High</span></td>
+                            <td>Adv. Jane Smith</td>
+                            <td>Jan 27, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="04-loan-request-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="ref-number">REQ-2024-0125</span></td>
+                            <td>
+                                <div class="borrower-info">
+                                    <span class="borrower-name">ABC Enterprises</span>
+                                    <span class="borrower-id">HDFC001232</span>
+                                </div>
+                            </td>
+                            <td>Commercial</td>
+                            <td>₹2,50,00,000</td>
+                            <td><span class="badge badge-pending">Pending</span></td>
+                            <td><span class="badge badge-normal">Normal</span></td>
+                            <td>Unassigned</td>
+                            <td>Jan 30, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="04-loan-request-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="ref-number">REQ-2024-0124</span></td>
+                            <td>
+                                <div class="borrower-info">
+                                    <span class="borrower-name">Amit Patel</span>
+                                    <span class="borrower-id">HDFC001231</span>
+                                </div>
+                            </td>
+                            <td>Home Loan</td>
+                            <td>₹35,00,000</td>
+                            <td><span class="badge badge-completed">Completed</span></td>
+                            <td><span class="badge badge-normal">Normal</span></td>
+                            <td>Adv. John Doe</td>
+                            <td>Jan 20, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="04-loan-request-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="ref-number">REQ-2024-0123</span></td>
+                            <td>
+                                <div class="borrower-info">
+                                    <span class="borrower-name">Sunita Verma</span>
+                                    <span class="borrower-id">HDFC001230</span>
+                                </div>
+                            </td>
+                            <td>Home Loan</td>
+                            <td>₹55,00,000</td>
+                            <td><span class="badge badge-completed">Completed</span></td>
+                            <td><span class="badge badge-normal">Normal</span></td>
+                            <td>Adv. Jane Smith</td>
+                            <td>Jan 18, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="04-loan-request-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <span class="pagination-info">Showing 1 to 5 of 127 requests</span>
+                    <div class="pagination-btns">
+                        <button class="page-btn">«</button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <button class="page-btn">...</button>
+                        <button class="page-btn">26</button>
+                        <button class="page-btn">»</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

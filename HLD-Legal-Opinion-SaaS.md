@@ -1,7 +1,7 @@
 # High-Level Design Document
 ## Legal Opinion SaaS Platform for Bank Panel Advocates
 
-**Version:** 1.0  
+**Version:** 2.0  
 **Date:** January 2026  
 **Status:** Draft
 
@@ -16,13 +16,15 @@
 5. [High-Level Architecture](#5-high-level-architecture)
 6. [Component Design](#6-component-design)
 7. [Multi-Tenancy Strategy](#7-multi-tenancy-strategy)
-8. [Data Architecture](#8-data-architecture)
-9. [Security Architecture](#9-security-architecture)
-10. [Infrastructure Design](#10-infrastructure-design)
-11. [CI/CD Pipeline](#11-cicd-pipeline)
-12. [Non-Functional Requirements](#12-non-functional-requirements)
-13. [Cost Estimation](#13-cost-estimation)
-14. [Risks & Mitigations](#14-risks--mitigations)
+8. [Authentication with Keycloak](#8-authentication-with-keycloak)
+9. [Data Architecture](#9-data-architecture)
+10. [AI/LLM Integration](#10-aillm-integration)
+11. [Infrastructure Design](#11-infrastructure-design)
+12. [UI Screens](#12-ui-screens)
+13. [CI/CD Pipeline](#13-cicd-pipeline)
+14. [Non-Functional Requirements](#14-non-functional-requirements)
+15. [Cost Estimation](#15-cost-estimation)
+16. [Risks & Mitigations](#16-risks--mitigations)
 
 ---
 
@@ -33,9 +35,11 @@ This document outlines the High-Level Design for a **Legal Opinion SaaS Platform
 ### Key Objectives
 - Provide a secure, multi-tenant SaaS platform for multiple banks
 - Enable document upload, review, and legal opinion generation workflow
+- **AI-powered document extraction and opinion generation using OpenAI APIs**
 - Maintain audit trails and historical records for compliance
 - Ensure data isolation and security across bank tenants
-- Build a scalable, cost-effective solution on AWS
+- **Portable architecture**: Run on VM during development, scale on Kubernetes in production
+- **Tenant-configurable UI** with custom branding (logos, colors) per bank
 
 ---
 
@@ -49,17 +53,18 @@ Banks in India engage panel advocates to verify loan application documents and p
 - Time-consuming with poor visibility
 
 ### 2.2 Solution Overview
-A cloud-based SaaS platform that:
+A SaaS platform that:
 - Digitizes the document submission and review process
-- **AI-powered document content extraction** using OCR and LLMs
+- **AI-powered document content extraction** using OCR and OpenAI GPT models
 - **LLM-assisted opinion generation** using extracted data and templates
 - Standardizes opinion generation with configurable templates
 - Provides real-time tracking and dashboards
 - Maintains complete audit trails
 - Enables multi-bank (tenant) operations with data isolation
+- **Supports white-labeling** with tenant-specific branding
 
 ### 2.3 AI/LLM Integration Overview
-The platform leverages Large Language Models (LLMs) for:
+The platform leverages **OpenAI APIs** for:
 1. **Document Intelligence**: Extract structured data from uploaded documents (property details, parties, dates, amounts)
 2. **Opinion Generation**: Generate draft legal opinions by combining extracted data with predefined templates
 3. **Content Validation**: Identify discrepancies and flag potential issues in documents
@@ -70,13 +75,13 @@ The platform leverages Large Language Models (LLMs) for:
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │   ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
-│   │ Document │───►│  OCR/Text    │───►│  LLM Data    │───►│  Structured  │ │
+│   │ Document │───►│  OCR/Text    │───►│  OpenAI GPT  │───►│  Structured  │ │
 │   │  Upload  │    │  Extraction  │    │  Extraction  │    │    Data      │ │
 │   └──────────┘    └──────────────┘    └──────────────┘    └──────┬───────┘ │
 │                                                                   │         │
 │                                                                   ▼         │
 │   ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
-│   │  Final   │◄───│   Lawyer     │◄───│  LLM Draft   │◄───│  Template +  │ │
+│   │  Final   │◄───│   Lawyer     │◄───│  OpenAI GPT  │◄───│  Template +  │ │
 │   │ Opinion  │    │   Review     │    │  Generation  │    │  Raw Data    │ │
 │   └──────────┘    └──────────────┘    └──────────────┘    └──────────────┘ │
 │                                                                              │
@@ -115,8 +120,8 @@ The platform leverages Large Language Models (LLMs) for:
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
 │                                                                             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   Tenant    │  │    Audit    │  │Notification │  │ Integration │        │
-│  │   Config    │  │    Trail    │  │   Engine    │  │    Hub      │        │
+│  │   Tenant    │  │    Audit    │  │Notification │  │   AI/LLM    │        │
+│  │  Branding   │  │    Trail    │  │   Engine    │  │  Processing │        │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -133,16 +138,19 @@ Bank Officer                    Panel Advocate                    System
      │  2. Upload Documents          │                              │
      │──────────────────────────────────────────────────────────────>│
      │                               │                              │
-     │                               │  3. Assignment Notification  │
+     │                               │  3. AI Extracts Document Data│
      │                               │<─────────────────────────────│
      │                               │                              │
-     │                               │  4. Review Documents         │
+     │                               │  4. Assignment Notification  │
      │                               │<─────────────────────────────│
      │                               │                              │
-     │                               │  5. Generate Opinion         │
+     │                               │  5. Review + AI Generate Draft│
      │                               │─────────────────────────────>│
      │                               │                              │
-     │  6. Opinion Delivered         │                              │
+     │                               │  6. Edit & Submit Opinion    │
+     │                               │─────────────────────────────>│
+     │                               │                              │
+     │  7. Opinion Delivered         │                              │
      │<─────────────────────────────────────────────────────────────│
      │                               │                              │
 ```
@@ -153,322 +161,339 @@ Bank Officer                    Panel Advocate                    System
 
 | Principle | Description |
 |-----------|-------------|
-| **Cloud-Native** | Leverage AWS managed services where possible |
-| **Containerized** | All application components run in containers |
-| **Multi-Tenant** | Shared infrastructure with logical data isolation |
+| **Traditional 3-Tier** | Presentation → Business Logic → Data Layer |
+| **Portable** | Run on VM (dev) or Kubernetes (production) |
+| **Containerized** | Docker containers for all application components |
+| **Multi-Tenant** | Shared infrastructure with logical data isolation via tenant_id |
 | **API-First** | All functionality exposed via RESTful APIs |
-| **Security-First** | Encryption, RBAC, audit logging by default |
-| **Infrastructure as Code** | All infrastructure defined in Terraform |
-| **12-Factor App** | Follow 12-factor methodology for cloud apps |
-| **Event-Driven** | Async processing for document handling |
+| **Security-First** | Keycloak authentication, RBAC, audit logging |
+| **Infrastructure as Code** | Terraform for AWS resources |
+| **12-Factor App** | Follow 12-factor methodology |
 
 ---
 
 ## 5. High-Level Architecture
 
-### 5.1 Architecture Diagram
-
-```
-                                    ┌─────────────────┐
-                                    │   CloudFront    │
-                                    │      CDN        │
-                                    └────────┬────────┘
-                                             │
-                                    ┌────────▼────────┐
-                                    │   Route 53      │
-                                    │     DNS         │
-                                    └────────┬────────┘
-                                             │
-                         ┌───────────────────┼───────────────────┐
-                         │                   │                   │
-                ┌────────▼────────┐ ┌────────▼────────┐ ┌────────▼────────┐
-                │  Web App (S3)   │ │    AWS WAF      │ │  Certificate    │
-                │  React SPA      │ │   Firewall      │ │   Manager       │
-                └────────┬────────┘ └────────┬────────┘ └─────────────────┘
-                         │                   │
-                         └─────────┬─────────┘
-                                   │
-                          ┌────────▼────────┐
-                          │ Application     │
-                          │ Load Balancer   │
-                          └────────┬────────┘
-                                   │
-┌──────────────────────────────────┼──────────────────────────────────────────┐
-│                         AWS VPC (Private)                                   │
-│                                  │                                          │
-│    ┌─────────────────────────────┼─────────────────────────────────────┐   │
-│    │                    EKS Cluster                                     │   │
-│    │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │   │
-│    │   │   API       │  │  Document   │  │  Opinion    │               │   │
-│    │   │  Gateway    │  │  Service    │  │  Service    │               │   │
-│    │   │  Service    │  │             │  │             │               │   │
-│    │   └─────────────┘  └─────────────┘  └─────────────┘               │   │
-│    │                                                                    │   │
-│    │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │   │
-│    │   │   User      │  │ Notification│  │  Audit      │               │   │
-│    │   │  Service    │  │  Service    │  │  Service    │               │   │
-│    │   └─────────────┘  └─────────────┘  └─────────────┘               │   │
-│    │                                                                    │   │
-│    └────────────────────────────────────────────────────────────────────┘   │
-│                                  │                                          │
-│    ┌─────────────────────────────┼─────────────────────────────────────┐   │
-│    │                     Data Layer                                     │   │
-│    │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │   │
-│    │   │  RDS        │  │ ElastiCache │  │  Amazon     │               │   │
-│    │   │ PostgreSQL  │  │   Redis     │  │    S3       │               │   │
-│    │   │ (Multi-AZ)  │  │  (Cluster)  │  │  (Docs)     │               │   │
-│    │   └─────────────┘  └─────────────┘  └─────────────┘               │   │
-│    │                                                                    │   │
-│    └────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-                    ┌─────────────────────────────────────────┐
-                    │           Supporting Services           │
-                    │  ┌──────────┐ ┌──────────┐ ┌──────────┐│
-                    │  │ Cognito  │ │   SES    │ │CloudWatch││
-                    │  │  Auth    │ │  Email   │ │ Logging  ││
-                    │  └──────────┘ └──────────┘ └──────────┘│
-                    │  ┌──────────┐ ┌──────────┐ ┌──────────┐│
-                    │  │  Secrets │ │  Lambda  │ │   SQS    ││
-                    │  │ Manager  │ │Functions │ │  Queues  ││
-                    │  └──────────┘ └──────────┘ └──────────┘│
-                    └─────────────────────────────────────────┘
-```
-
-### 5.2 Technology Stack
-
-| Layer | Technology | Justification |
-|-------|------------|---------------|
-| **Frontend** | React.js + TypeScript | Modern SPA framework, rich ecosystem |
-| **UI Framework** | Ant Design / Material UI | Enterprise-grade components |
-| **API Gateway** | Kong / AWS API Gateway | Rate limiting, auth, routing |
-| **Backend** | Node.js (NestJS) or Python (FastAPI) | Async support, fast development |
-| **Database** | PostgreSQL (RDS) | ACID compliance, JSON support |
-| **Cache** | Redis (ElastiCache) | Session management, caching |
-| **Storage** | Amazon S3 | Document storage, encryption |
-| **Container Orchestration** | Amazon EKS | Managed Kubernetes |
-| **Auth** | Amazon Cognito | Multi-tenant auth, MFA support |
-| **Email** | Amazon SES | Transactional emails |
-| **Queue** | Amazon SQS | Async document processing |
-| **Monitoring** | CloudWatch + Prometheus + Grafana | Observability |
-| **IaC** | Terraform | Infrastructure automation |
-| **CI/CD** | GitHub Actions | Build, test, deploy automation |
-| **OCR** | Amazon Textract | Document text extraction |
-| **LLM** | Amazon Bedrock (Claude) / OpenAI | AI-powered data extraction & opinion generation |
-| **Vector Store** | Amazon OpenSearch / Pinecone | Template embeddings, semantic search (optional) |
-
-### 5.3 AI/LLM Architecture
+### 5.1 Traditional 3-Tier Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         AI/LLM PIPELINE ARCHITECTURE                         │
+│                        TRADITIONAL 3-TIER ARCHITECTURE                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│   DOCUMENT PROCESSING PIPELINE                                               │
-│   ────────────────────────────                                               │
+│   TIER 1: PRESENTATION LAYER                                                │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   ┌─────────────────────────────────────────────────────────────────┐  ││
+│   │   │                    REACT SPA (Frontend)                          │  ││
+│   │   │                                                                  │  ││
+│   │   │  • Tenant-specific branding (logo, colors, favicon)             │  ││
+│   │   │  • Responsive web application                                    │  ││
+│   │   │  • Keycloak JS adapter for authentication                       │  ││
+│   │   │  • Served via Nginx / S3 + CloudFront                           │  ││
+│   │   │                                                                  │  ││
+│   │   └─────────────────────────────────────────────────────────────────┘  ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
+│                                      │                                       │
+│                                      │ HTTPS (REST API)                      │
+│                                      ▼                                       │
+│   TIER 2: APPLICATION LAYER (BUSINESS LOGIC)                                │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   ┌──────────────────────────────────────────────────────────────────┐ ││
+│   │   │                   CENTRALIZED BACKEND API                         │ ││
+│   │   │                   (Node.js/NestJS or Python/FastAPI)              │ ││
+│   │   │                                                                   │ ││
+│   │   │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │ ││
+│   │   │   │   Tenant    │  │    User     │  │  Document   │             │ ││
+│   │   │   │  Middleware │  │   Module    │  │   Module    │             │ ││
+│   │   │   │ (tenant_id) │  │             │  │             │             │ ││
+│   │   │   └─────────────┘  └─────────────┘  └─────────────┘             │ ││
+│   │   │                                                                   │ ││
+│   │   │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │ ││
+│   │   │   │   Opinion   │  │   AI/LLM    │  │    Audit    │             │ ││
+│   │   │   │   Module    │  │   Module    │  │   Module    │             │ ││
+│   │   │   │             │  │  (OpenAI)   │  │             │             │ ││
+│   │   │   └─────────────┘  └─────────────┘  └─────────────┘             │ ││
+│   │   │                                                                   │ ││
+│   │   │   • Single deployment, multi-tenant via tenant_id                │ ││
+│   │   │   • Keycloak token validation                                    │ ││
+│   │   │   • All queries filtered by tenant_id                            │ ││
+│   │   │                                                                   │ ││
+│   │   └──────────────────────────────────────────────────────────────────┘ ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
+│                                      │                                       │
+│                                      │ SQL / S3 API                          │
+│                                      ▼                                       │
+│   TIER 3: DATA LAYER                                                        │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐    ││
+│   │   │   PostgreSQL     │  │     Amazon S3    │  │     Redis        │    ││
+│   │   │   (AWS RDS)      │  │   (Documents)    │  │    (Cache)       │    ││
+│   │   │                  │  │                  │  │                  │    ││
+│   │   │ • Central DB     │  │ • Tenant folders │  │ • Session cache  │    ││
+│   │   │ • tenant_id in   │  │ • /{tenant_id}/  │  │ • API cache      │    ││
+│   │   │   all tables     │  │   /documents/    │  │                  │    ││
+│   │   │ • RLS policies   │  │   /opinions/     │  │                  │    ││
+│   │   │                  │  │                  │  │                  │    ││
+│   │   └──────────────────┘  └──────────────────┘  └──────────────────┘    ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
 │                                                                              │
-│   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐    │
-│   │   S3       │   │   Amazon    │   │   LLM       │   │  Structured │    │
-│   │ (Document) │──►│  Textract   │──►│  Extraction │──►│    JSON     │    │
-│   │            │   │   (OCR)     │   │  (Bedrock)  │   │    Data     │    │
-│   └─────────────┘   └─────────────┘   └─────────────┘   └──────┬──────┘    │
-│                                                                 │           │
-│                                                                 │           │
-│   OPINION GENERATION PIPELINE                                   │           │
-│   ───────────────────────────                                   │           │
-│                                                                 ▼           │
-│   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐    │
-│   │  Template   │   │   Prompt    │   │    LLM      │   │   Draft     │    │
-│   │  Library   │──►│ Engineering │──►│  Generation │──►│  Opinion    │    │
-│   │            │   │             │   │  (Bedrock)  │   │             │    │
-│   └─────────────┘   └─────────────┘   └─────────────┘   └──────┬──────┘    │
-│                                                                 │           │
-│                                                                 ▼           │
-│                                                         ┌─────────────┐    │
-│                                                         │   Lawyer    │    │
-│                                                         │   Review &  │    │
-│                                                         │    Edit     │    │
-│                                                         └─────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   EXTERNAL SERVICES
+   ┌────────────────────────────────────────────────────────────────────────┐
+   │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                 │
+   │  │   Keycloak   │  │   OpenAI     │  │   SMTP       │                 │
+   │  │   (Auth)     │  │   API        │  │   (Email)    │                 │
+   │  │              │  │              │  │              │                 │
+   │  │ • User auth  │  │ • GPT-4      │  │ • AWS SES    │                 │
+   │  │ • SSO        │  │ • Extraction │  │ • SendGrid   │                 │
+   │  │ • MFA        │  │ • Generation │  │              │                 │
+   │  └──────────────┘  └──────────────┘  └──────────────┘                 │
+   └────────────────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 Deployment Flexibility
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        DEPLOYMENT OPTIONS                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│   KEY COMPONENTS:                                                           │
-│   • OCR Engine: Amazon Textract for text extraction from scanned docs      │
-│   • Data Extraction LLM: Extract structured fields (names, dates, amounts) │
-│   • Template Engine: Configurable opinion templates per loan/document type │
-│   • Generation LLM: Combine template + extracted data to generate opinion  │
-│   • Human-in-the-Loop: Lawyer reviews, edits, and approves AI-generated draft │
+│   DEVELOPMENT ENVIRONMENT (VM-based)                                        │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   Single VM / Local Machine                                            ││
+│   │   ┌─────────────────────────────────────────────────────────────────┐  ││
+│   │   │                                                                  │  ││
+│   │   │   docker-compose.yml                                             │  ││
+│   │   │   ├── frontend (React)        → localhost:3000                  │  ││
+│   │   │   ├── backend (NestJS/FastAPI)→ localhost:8080                  │  ││
+│   │   │   ├── keycloak                → localhost:8180                  │  ││
+│   │   │   ├── postgres                → localhost:5432                  │  ││
+│   │   │   ├── redis                   → localhost:6379                  │  ││
+│   │   │   └── minio (S3 compatible)   → localhost:9000                  │  ││
+│   │   │                                                                  │  ││
+│   │   └─────────────────────────────────────────────────────────────────┘  ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
+│                                                                              │
+│   PRODUCTION ENVIRONMENT (Kubernetes)                                       │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   Kubernetes Cluster (EKS / Self-managed)                              ││
+│   │   ┌─────────────────────────────────────────────────────────────────┐  ││
+│   │   │                                                                  │  ││
+│   │   │   Namespace: legal-opinion-prod                                  │  ││
+│   │   │   ├── frontend-deployment     (replicas: 2-5)                   │  ││
+│   │   │   ├── backend-deployment      (replicas: 3-10)                  │  ││
+│   │   │   ├── keycloak-deployment     (replicas: 2)                     │  ││
+│   │   │   ├── ingress-nginx           (load balancer)                   │  ││
+│   │   │   └── HPA (auto-scaling)                                         │  ││
+│   │   │                                                                  │  ││
+│   │   │   External Services:                                             │  ││
+│   │   │   ├── AWS RDS PostgreSQL      (managed)                         │  ││
+│   │   │   ├── AWS S3                  (document storage)                │  ││
+│   │   │   ├── AWS ElastiCache Redis   (caching)                         │  ││
+│   │   │   └── OpenAI API              (AI processing)                   │  ││
+│   │   │                                                                  │  ││
+│   │   └─────────────────────────────────────────────────────────────────┘  ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### 5.3 Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Frontend** | React.js + TypeScript | Single Page Application |
+| **UI Framework** | Ant Design / Tailwind CSS | UI components |
+| **Backend** | Node.js (NestJS) or Python (FastAPI) | REST API, business logic |
+| **Database** | PostgreSQL (AWS RDS) | Relational data with tenant_id |
+| **Cache** | Redis (AWS ElastiCache or self-hosted) | Session, API caching |
+| **Document Storage** | Amazon S3 | Documents, PDFs (tenant folders) |
+| **Authentication** | Keycloak | SSO, MFA, user management |
+| **AI/LLM** | OpenAI API (GPT-4) | Document extraction, opinion generation |
+| **OCR** | Tesseract / AWS Textract | Text extraction from images |
+| **Email** | AWS SES / SendGrid | Notifications |
+| **Container Runtime** | Docker | Containerization |
+| **Orchestration (Prod)** | Kubernetes (EKS) | Production scaling |
+| **IaC** | Terraform | AWS infrastructure |
+| **CI/CD** | GitHub Actions | Build, test, deploy |
 
 ---
 
 ## 6. Component Design
 
-### 6.1 Frontend Application
-
-**Architecture:** Single Page Application (SPA)
+### 6.1 Frontend Application (React SPA)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     React Frontend Application                   │
+│                   FRONTEND ARCHITECTURE                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    Presentation Layer                     │   │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐           │   │
-│  │  │   Pages    │ │ Components │ │   Layouts  │           │   │
-│  │  └────────────┘ └────────────┘ └────────────┘           │   │
-│  └──────────────────────────────────────────────────────────┘   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                 TENANT BRANDING LAYER                       │ │
+│  │                                                             │ │
+│  │  On app load:                                               │ │
+│  │  1. Extract tenant from subdomain (hdfc.legalopinion.com)  │ │
+│  │  2. OR from URL param (?tenant=hdfc)                       │ │
+│  │  3. Fetch tenant config from API: GET /api/tenants/config  │ │
+│  │  4. Apply branding: logo, primary color, favicon           │ │
+│  │                                                             │ │
+│  │  Tenant Config Response:                                    │ │
+│  │  {                                                          │ │
+│  │    "tenant_id": "uuid",                                    │ │
+│  │    "name": "HDFC Bank",                                    │ │
+│  │    "logo_url": "https://s3.../hdfc/logo.png",             │ │
+│  │    "favicon_url": "https://s3.../hdfc/favicon.ico",       │ │
+│  │    "primary_color": "#004C8F",                             │ │
+│  │    "secondary_color": "#ED1C24"                            │ │
+│  │  }                                                          │ │
+│  │                                                             │ │
+│  └────────────────────────────────────────────────────────────┘ │
 │                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    State Management                       │   │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐           │   │
-│  │  │ Redux/Zustand│ │  React Query│ │ Context API │         │   │
-│  │  └────────────┘ └────────────┘ └────────────┘           │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    Service Layer                          │   │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐           │   │
-│  │  │ API Client │ │ Auth Service│ │File Upload │           │   │
-│  │  │  (Axios)   │ │  (Cognito) │ │  Service   │           │   │
-│  │  └────────────┘ └────────────┘ └────────────┘           │   │
-│  └──────────────────────────────────────────────────────────┘   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                   APPLICATION MODULES                       │ │
+│  │                                                             │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │ │
+│  │  │    Auth      │  │  Dashboard   │  │   Requests   │     │ │
+│  │  │  (Keycloak)  │  │              │  │  (Loan/Doc)  │     │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘     │ │
+│  │                                                             │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │ │
+│  │  │  Documents   │  │   Opinions   │  │    Users     │     │ │
+│  │  │   Upload     │  │   Editor     │  │   (Admin)    │     │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘     │ │
+│  │                                                             │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │ │
+│  │  │   Reports    │  │  AI Assist   │  │   Settings   │     │ │
+│  │  │   Audit      │  │   Panel      │  │   Tenant     │     │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘     │ │
+│  │                                                             │ │
+│  └────────────────────────────────────────────────────────────┘ │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Key Modules:**
-- **Authentication Module**: Login, MFA, Password reset, Session management
-- **Dashboard Module**: Overview, statistics, pending tasks
-- **Document Module**: Upload, preview, categorization
-- **Opinion Module**: Create, edit, templates, PDF generation
-- **User Management**: User CRUD, role assignment (admin)
-- **Reports Module**: Analytics, export, audit logs
+**Key UI Screens** (See [Section 12: UI Screens](#12-ui-screens) for mockups):
+- Login Page (with tenant branding)
+- Dashboard
+- Loan Requests List
+- Loan Request Detail
+- Document Upload
+- Document Viewer
+- Opinion Editor (with AI assist)
+- User Management
+- Tenant Settings (Admin)
+- Reports & Audit Logs
 
-### 6.2 Backend Microservices
-
-#### 6.2.1 API Gateway Service
-- Request routing and load balancing
-- Rate limiting per tenant
-- JWT validation
-- Request/Response transformation
-- API versioning
-
-#### 6.2.2 User Service
-```
-Responsibilities:
-├── User registration and profile management
-├── Role-based access control (RBAC)
-├── Tenant-user association
-├── Lawyer profile and credentials
-└── Activity logging
-```
-
-#### 6.2.3 Document Service
-```
-Responsibilities:
-├── Document upload (multipart, resumable)
-├── Document storage (S3 with encryption)
-├── Document categorization
-├── Virus scanning integration
-├── Document versioning
-├── Thumbnail generation
-├── OCR processing trigger (via Textract)
-└── AI extraction pipeline orchestration
-```
-
-#### 6.2.4 AI/LLM Service (Document Intelligence)
-```
-Responsibilities:
-├── OCR coordination (Amazon Textract)
-├── Raw text to structured data extraction (LLM)
-├── Document field extraction:
-│   ├── Property details (address, area, boundaries)
-│   ├── Party details (names, addresses, identification)
-│   ├── Financial details (amounts, dates, terms)
-│   ├── Legal details (registration numbers, dates)
-│   └── Encumbrance details (mortgages, liens)
-├── Template management for extraction prompts
-├── Extraction result validation
-├── Confidence scoring for extracted fields
-└── Manual review flagging for low-confidence extractions
-```
-
-#### 6.2.5 Opinion Generation Service (LLM-Powered)
-```
-Responsibilities:
-├── Opinion template management
-├── Prompt engineering for opinion generation
-├── LLM integration (Amazon Bedrock / OpenAI)
-├── Draft opinion generation workflow:
-│   ├── Fetch extracted document data
-│   ├── Select appropriate template
-│   ├── Construct generation prompt
-│   ├── Call LLM for draft generation
-│   └── Store draft with source tracking
-├── Regeneration with modified parameters
-├── Version tracking for AI-generated content
-└── Audit logging of AI interactions
-```
-
-#### 6.2.6 Opinion Service
-```
-Responsibilities:
-├── Opinion request creation
-├── Workflow management (Draft → Review → Approved → Published)
-├── Template management
-├── PDF generation
-├── Digital signature integration
-└── Opinion versioning
-```
-
-#### 6.2.7 Notification Service
-```
-Responsibilities:
-├── Email notifications (SES)
-├── In-app notifications
-├── SMS notifications (optional)
-├── Notification preferences
-└── Notification templates
-```
-
-#### 6.2.8 Audit Service
-```
-Responsibilities:
-├── Audit log ingestion
-├── Audit log storage
-├── Compliance reporting
-├── Data retention management
-└── Audit log search
-```
-
-### 6.3 Service Communication
+### 6.2 Backend API (Centralized, Multi-Tenant)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Inter-Service Communication                   │
+│                    BACKEND API STRUCTURE                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  Synchronous (REST/gRPC):                                       │
-│  ┌──────────┐    HTTP/gRPC    ┌──────────┐                     │
-│  │ Service A│ ◄──────────────► │ Service B│                     │
-│  └──────────┘                  └──────────┘                     │
-│  - User authentication                                          │
-│  - Real-time data queries                                       │
-│  - Health checks                                                │
-│                                                                  │
-│  Asynchronous (SQS/SNS):                                        │
-│  ┌──────────┐    SQS/SNS      ┌──────────┐                     │
-│  │ Service A│ ──────────────► │ Service B│                     │
-│  └──────────┘                  └──────────┘                     │
-│  - Document processing                                          │
-│  - Notification dispatch                                        │
-│  - Audit log events                                             │
-│  - Report generation                                            │
+│  src/                                                            │
+│  ├── main.ts                    # Application entry              │
+│  ├── app.module.ts              # Root module                    │
+│  │                                                               │
+│  ├── common/                                                     │
+│  │   ├── middleware/                                             │
+│  │   │   ├── tenant.middleware.ts    # Extract tenant_id        │
+│  │   │   └── auth.middleware.ts      # Keycloak validation      │
+│  │   ├── guards/                                                 │
+│  │   │   ├── roles.guard.ts          # RBAC                     │
+│  │   │   └── tenant.guard.ts         # Tenant access            │
+│  │   ├── interceptors/                                           │
+│  │   │   └── audit.interceptor.ts    # Auto audit logging       │
+│  │   └── filters/                                                │
+│  │       └── tenant.filter.ts        # Auto tenant_id filter    │
+│  │                                                               │
+│  ├── modules/                                                    │
+│  │   ├── tenant/                                                 │
+│  │   │   ├── tenant.controller.ts    # GET /tenants/config      │
+│  │   │   ├── tenant.service.ts                                  │
+│  │   │   └── tenant.entity.ts        # Branding config          │
+│  │   │                                                           │
+│  │   ├── user/                                                   │
+│  │   │   ├── user.controller.ts                                 │
+│  │   │   ├── user.service.ts                                    │
+│  │   │   └── user.entity.ts          # tenant_id column         │
+│  │   │                                                           │
+│  │   ├── loan-request/                                           │
+│  │   │   ├── loan-request.controller.ts                         │
+│  │   │   ├── loan-request.service.ts                            │
+│  │   │   └── loan-request.entity.ts  # tenant_id column         │
+│  │   │                                                           │
+│  │   ├── document/                                               │
+│  │   │   ├── document.controller.ts                             │
+│  │   │   ├── document.service.ts                                │
+│  │   │   ├── document.entity.ts      # tenant_id column         │
+│  │   │   └── s3.service.ts           # S3 with tenant folders   │
+│  │   │                                                           │
+│  │   ├── opinion/                                                │
+│  │   │   ├── opinion.controller.ts                              │
+│  │   │   ├── opinion.service.ts                                 │
+│  │   │   └── opinion.entity.ts       # tenant_id column         │
+│  │   │                                                           │
+│  │   ├── ai/                                                     │
+│  │   │   ├── ai.controller.ts        # AI endpoints             │
+│  │   │   ├── ai.service.ts                                      │
+│  │   │   ├── openai.service.ts       # OpenAI API calls         │
+│  │   │   └── extraction.entity.ts    # tenant_id column         │
+│  │   │                                                           │
+│  │   └── audit/                                                  │
+│  │       ├── audit.controller.ts                                │
+│  │       ├── audit.service.ts                                   │
+│  │       └── audit.entity.ts         # tenant_id column         │
+│  │                                                               │
+│  └── config/                                                     │
+│      ├── database.config.ts                                      │
+│      ├── keycloak.config.ts                                      │
+│      ├── s3.config.ts                                            │
+│      └── openai.config.ts                                        │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Tenant Middleware (Core Multi-Tenancy Logic)
+
+```
+REQUEST FLOW WITH TENANT RESOLUTION
+───────────────────────────────────
+
+┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  Client  │───►│   Nginx /    │───►│   Keycloak   │───►│   Backend    │
+│  (React) │    │   Ingress    │    │  Validation  │    │     API      │
+└──────────┘    └──────────────┘    └──────────────┘    └──────┬───────┘
+                                                               │
+                                                               ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      TENANT MIDDLEWARE                                   │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  1. Extract tenant_id from:                                             │
+│     • JWT token claim: token.tenant_id (primary)                        │
+│     • OR X-Tenant-ID header (internal service calls)                    │
+│                                                                          │
+│  2. Validate tenant exists and is active                                │
+│                                                                          │
+│  3. Set tenant context for request:                                     │
+│     • req.tenantId = extracted_tenant_id                                │
+│     • Set PostgreSQL session: SET app.current_tenant = 'tenant_id'      │
+│                                                                          │
+│  4. All subsequent queries automatically filtered by tenant_id          │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -477,219 +502,507 @@ Responsibilities:
 
 ### 7.1 Tenant Isolation Model
 
-**Chosen Approach: Shared Database, Shared Schema with Tenant ID**
+**Approach: Shared Database, Shared Schema with tenant_id Column**
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Multi-Tenancy Model                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                    Application Layer                     │    │
-│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐    │    │
-│  │  │ Bank A  │  │ Bank B  │  │ Bank C  │  │ Bank D  │    │    │
-│  │  │ Context │  │ Context │  │ Context │  │ Context │    │    │
-│  │  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘    │    │
-│  │       │            │            │            │          │    │
-│  │       └────────────┴─────┬──────┴────────────┘          │    │
-│  │                          │                              │    │
-│  │                   ┌──────▼──────┐                       │    │
-│  │                   │   Tenant    │                       │    │
-│  │                   │  Resolver   │                       │    │
-│  │                   │ Middleware  │                       │    │
-│  │                   └──────┬──────┘                       │    │
-│  │                          │                              │    │
-│  └──────────────────────────┼──────────────────────────────┘    │
-│                             │                                    │
-│  ┌──────────────────────────▼──────────────────────────────┐    │
-│  │                    Database Layer                        │    │
-│  │                                                          │    │
-│  │  ┌────────────────────────────────────────────────────┐ │    │
-│  │  │              PostgreSQL Database                    │ │    │
-│  │  │  ┌──────────────────────────────────────────────┐  │ │    │
-│  │  │  │ users     | tenant_id | id | name | email    │  │ │    │
-│  │  │  │ documents | tenant_id | id | doc_type | path │  │ │    │
-│  │  │  │ opinions  | tenant_id | id | status | content│  │ │    │
-│  │  │  │ ...       | tenant_id | ...                  │  │ │    │
-│  │  │  └──────────────────────────────────────────────┘  │ │    │
-│  │  │                                                     │ │    │
-│  │  │  Row Level Security (RLS) enforced per tenant_id   │ │    │
-│  │  └─────────────────────────────────────────────────────┘ │    │
-│  │                                                          │    │
-│  └──────────────────────────────────────────────────────────┘    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       MULTI-TENANCY ARCHITECTURE                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   UI LAYER (Per-Tenant Branding)                                            │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   Bank A (hdfc.app.com)      Bank B (icici.app.com)                   ││
+│   │   ┌─────────────────────┐    ┌─────────────────────┐                  ││
+│   │   │ [HDFC LOGO]         │    │ [ICICI LOGO]        │                  ││
+│   │   │ Primary: #004C8F    │    │ Primary: #F58220    │                  ││
+│   │   │ Secondary: #ED1C24  │    │ Secondary: #003366  │                  ││
+│   │   └─────────────────────┘    └─────────────────────┘                  ││
+│   │                                                                         ││
+│   │   Same React codebase - different branding loaded at runtime           ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
+│                                      │                                       │
+│                                      ▼                                       │
+│   API LAYER (Single Deployment, Tenant-Aware)                               │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   ┌───────────────────────────────────────────────────────────────┐   ││
+│   │   │                  CENTRALIZED BACKEND API                       │   ││
+│   │   │                                                                │   ││
+│   │   │   Request: Authorization: Bearer <jwt>                        │   ││
+│   │   │                                                                │   ││
+│   │   │   JWT Payload:                                                 │   ││
+│   │   │   {                                                            │   ││
+│   │   │     "sub": "user-uuid",                                       │   ││
+│   │   │     "tenant_id": "hdfc-tenant-uuid",  ← Extracted             │   ││
+│   │   │     "roles": ["panel_advocate"],                              │   ││
+│   │   │     "email": "lawyer@hdfc.com"                                │   ││
+│   │   │   }                                                            │   ││
+│   │   │                                                                │   ││
+│   │   │   All queries: WHERE tenant_id = :tenant_id                   │   ││
+│   │   │                                                                │   ││
+│   │   └───────────────────────────────────────────────────────────────┘   ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
+│                                      │                                       │
+│                                      ▼                                       │
+│   DATA LAYER (Shared DB, Tenant Column)                                     │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   PostgreSQL Database                                                  ││
+│   │   ┌───────────────────────────────────────────────────────────────┐   ││
+│   │   │                                                                │   ││
+│   │   │   users table                                                  │   ││
+│   │   │   ┌──────────┬──────────┬──────────┬──────────┐              │   ││
+│   │   │   │tenant_id │ id       │ email    │ name     │              │   ││
+│   │   │   ├──────────┼──────────┼──────────┼──────────┤              │   ││
+│   │   │   │ HDFC-uuid│ u001     │ a@hdfc   │ John     │              │   ││
+│   │   │   │ ICICI-uuid│u002     │ b@icici  │ Jane     │              │   ││
+│   │   │   └──────────┴──────────┴──────────┴──────────┘              │   ││
+│   │   │                                                                │   ││
+│   │   │   Row Level Security (RLS):                                   │   ││
+│   │   │   CREATE POLICY tenant_isolation ON users                     │   ││
+│   │   │     USING (tenant_id = current_setting('app.current_tenant')) │   ││
+│   │   │                                                                │   ││
+│   │   └───────────────────────────────────────────────────────────────┘   ││
+│   │                                                                         ││
+│   │   Amazon S3 (Document Storage)                                         ││
+│   │   ┌───────────────────────────────────────────────────────────────┐   ││
+│   │   │                                                                │   ││
+│   │   │   legal-opinion-docs/                                         │   ││
+│   │   │   ├── {hdfc-tenant-uuid}/                                     │   ││
+│   │   │   │   ├── documents/                                          │   ││
+│   │   │   │   ├── opinions/                                           │   ││
+│   │   │   │   └── branding/                                           │   ││
+│   │   │   │       ├── logo.png                                        │   ││
+│   │   │   │       └── favicon.ico                                     │   ││
+│   │   │   ├── {icici-tenant-uuid}/                                    │   ││
+│   │   │   │   ├── documents/                                          │   ││
+│   │   │   │   ├── opinions/                                           │   ││
+│   │   │   │   └── branding/                                           │   ││
+│   │   │   └── ...                                                     │   ││
+│   │   │                                                                │   ││
+│   │   └───────────────────────────────────────────────────────────────┘   ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 7.2 Tenant Resolution Strategy
-
-```typescript
-// Tenant Resolution Flow
-1. User authenticates → JWT contains tenant_id claim
-2. Request arrives at API Gateway
-3. Tenant Resolver Middleware extracts tenant_id from:
-   - JWT token (primary)
-   - X-Tenant-ID header (internal services)
-   - Subdomain (bank-a.legalopinion.com) - optional
-4. Tenant context set for entire request lifecycle
-5. All database queries automatically filtered by tenant_id
-6. All S3 paths prefixed with tenant_id
-```
-
-### 7.3 Tenant Data Model
+### 7.2 Tenant Configuration Table
 
 ```sql
--- Tenant Master Table
 CREATE TABLE tenants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    code VARCHAR(50) UNIQUE NOT NULL,  -- e.g., 'HDFC', 'ICICI'
-    subscription_tier VARCHAR(50) NOT NULL,
-    settings JSONB DEFAULT '{}',
+    code VARCHAR(50) UNIQUE NOT NULL,        -- 'HDFC', 'ICICI'
+    name VARCHAR(255) NOT NULL,              -- 'HDFC Bank'
+    
+    -- Branding Configuration
+    logo_url VARCHAR(500),                   -- S3 URL
+    favicon_url VARCHAR(500),                -- S3 URL
+    primary_color VARCHAR(7) DEFAULT '#1890ff',
+    secondary_color VARCHAR(7) DEFAULT '#52c41a',
+    
+    -- Contact Info
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(20),
+    address TEXT,
+    
+    -- Subscription
+    subscription_tier VARCHAR(50) DEFAULT 'standard',
+    max_users INT DEFAULT 100,
+    max_documents_per_month INT DEFAULT 10000,
+    
+    -- Status
     is_active BOOLEAN DEFAULT true,
+    trial_ends_at TIMESTAMP,
+    
+    -- Metadata
+    settings JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Row Level Security Policy Example
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY tenant_isolation_policy ON users
-    USING (tenant_id = current_setting('app.current_tenant')::uuid);
 ```
 
-### 7.4 S3 Bucket Structure (Per Tenant)
+### 7.3 Tenant Branding API
 
-```
-legal-opinion-documents-{env}/
-├── {tenant_id}/
-│   ├── loan-applications/
-│   │   └── {application_id}/
-│   │       ├── property-docs/
-│   │       ├── identity-docs/
-│   │       ├── financial-docs/
-│   │       └── collateral-docs/
-│   ├── generated-opinions/
-│   │   └── {opinion_id}/
-│   │       └── opinion_v1.pdf
-│   └── templates/
-│       └── {template_id}/
+```yaml
+# API Endpoints for Tenant Configuration
+
+# Public - Get tenant config by subdomain/code (no auth required)
+GET /api/v1/tenants/config?code=hdfc
+Response:
+{
+  "tenant_id": "uuid",
+  "name": "HDFC Bank",
+  "logo_url": "https://s3.../hdfc/logo.png",
+  "favicon_url": "https://s3.../hdfc/favicon.ico", 
+  "primary_color": "#004C8F",
+  "secondary_color": "#ED1C24"
+}
+
+# Admin - Update tenant branding (requires tenant_admin role)
+PUT /api/v1/tenants/branding
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+Body: {
+  "logo": <file>,
+  "favicon": <file>,
+  "primary_color": "#004C8F",
+  "secondary_color": "#ED1C24"
+}
 ```
 
 ---
 
-## 8. Data Architecture
+## 8. Authentication with Keycloak
 
-### 8.1 Entity Relationship Diagram
+### 8.1 Keycloak Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        KEYCLOAK AUTHENTICATION                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   KEYCLOAK SERVER                                                           │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   Realm: legal-opinion-saas                                            ││
+│   │                                                                         ││
+│   │   ┌─────────────────────────────────────────────────────────────────┐  ││
+│   │   │                     REALM CONFIGURATION                          │  ││
+│   │   │                                                                  │  ││
+│   │   │  • Login Settings: Email as username                            │  ││
+│   │   │  • Password Policy: 12 chars, uppercase, number, special        │  ││
+│   │   │  • MFA: TOTP (Google Authenticator) - Optional per tenant       │  ││
+│   │   │  • Session: 8 hours, refresh 30 days                            │  ││
+│   │   │  • Token: RS256 signed JWT                                      │  ││
+│   │   │                                                                  │  ││
+│   │   └─────────────────────────────────────────────────────────────────┘  ││
+│   │                                                                         ││
+│   │   ┌─────────────────────────────────────────────────────────────────┐  ││
+│   │   │                        CLIENTS                                   │  ││
+│   │   │                                                                  │  ││
+│   │   │  ┌───────────────────┐    ┌───────────────────┐                │  ││
+│   │   │  │ legal-opinion-web │    │ legal-opinion-api │                │  ││
+│   │   │  │ (Public Client)   │    │(Confidential Client)│               │  ││
+│   │   │  │                   │    │                   │                │  ││
+│   │   │  │ • Frontend SPA    │    │ • Backend API     │                │  ││
+│   │   │  │ • PKCE flow       │    │ • Service account │                │  ││
+│   │   │  │ • Redirect URIs   │    │ • Token validation│                │  ││
+│   │   │  └───────────────────┘    └───────────────────┘                │  ││
+│   │   │                                                                  │  ││
+│   │   └─────────────────────────────────────────────────────────────────┘  ││
+│   │                                                                         ││
+│   │   ┌─────────────────────────────────────────────────────────────────┐  ││
+│   │   │                    ROLES (Realm Level)                           │  ││
+│   │   │                                                                  │  ││
+│   │   │  • super_admin      - Platform administration                   │  ││
+│   │   │  • tenant_admin     - Tenant settings, user management          │  ││
+│   │   │  • bank_officer     - Create requests, upload documents         │  ││
+│   │   │  • panel_advocate   - Review, create opinions                   │  ││
+│   │   │  • senior_advocate  - Approve opinions                          │  ││
+│   │   │  • viewer           - Read-only access                          │  ││
+│   │   │                                                                  │  ││
+│   │   └─────────────────────────────────────────────────────────────────┘  ││
+│   │                                                                         ││
+│   │   ┌─────────────────────────────────────────────────────────────────┐  ││
+│   │   │                USER ATTRIBUTES (Custom)                          │  ││
+│   │   │                                                                  │  ││
+│   │   │  • tenant_id: UUID (required) - mapped to JWT                   │  ││
+│   │   │  • tenant_code: String        - mapped to JWT                   │  ││
+│   │   │  • phone: String                                                │  ││
+│   │   │  • bar_council_number: String (for advocates)                   │  ││
+│   │   │                                                                  │  ││
+│   │   └─────────────────────────────────────────────────────────────────┘  ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 JWT Token Structure
+
+```json
+{
+  "exp": 1706200000,
+  "iat": 1706196400,
+  "jti": "jwt-id-uuid",
+  "iss": "https://keycloak.example.com/realms/legal-opinion-saas",
+  "aud": "legal-opinion-api",
+  "sub": "user-uuid",
+  "typ": "Bearer",
+  "azp": "legal-opinion-web",
+  
+  "realm_access": {
+    "roles": ["panel_advocate"]
+  },
+  
+  "scope": "openid email profile",
+  "email_verified": true,
+  "name": "John Advocate",
+  "preferred_username": "john@hdfc.com",
+  "email": "john@hdfc.com",
+  
+  "tenant_id": "hdfc-tenant-uuid",
+  "tenant_code": "HDFC"
+}
+```
+
+### 8.3 Authentication Flows
+
+```
+FRONTEND AUTHENTICATION (PKCE Flow)
+───────────────────────────────────
+
+┌──────────┐     ┌──────────┐     ┌──────────┐
+│  React   │     │ Keycloak │     │ Backend  │
+│   App    │     │  Server  │     │   API    │
+└────┬─────┘     └────┬─────┘     └────┬─────┘
+     │                │                │
+     │ 1. User clicks login            │
+     │─────────────────────────────────>
+     │                │                │
+     │ 2. Redirect to Keycloak login page
+     │<────────────────                │
+     │                │                │
+     │ 3. User enters credentials + MFA
+     │─────────────────>               │
+     │                │                │
+     │ 4. Auth code (via redirect)     │
+     │<────────────────                │
+     │                │                │
+     │ 5. Exchange code for tokens (PKCE)
+     │─────────────────>               │
+     │                │                │
+     │ 6. Access token + Refresh token │
+     │<────────────────                │
+     │                │                │
+     │ 7. API request with Bearer token│
+     │────────────────────────────────>│
+     │                │                │
+     │                │ 8. Validate JWT │
+     │                │    (public key)│
+     │                │                │
+     │ 9. Response    │                │
+     │<────────────────────────────────│
+     │                │                │
+
+
+BACKEND TOKEN VALIDATION
+────────────────────────
+
+┌──────────────────────────────────────────────────────────────────┐
+│                   BACKEND AUTH MIDDLEWARE                         │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  1. Extract token from Authorization header                      │
+│     Authorization: Bearer eyJhbGciOiJSUzI1NiIs...                │
+│                                                                   │
+│  2. Validate JWT signature using Keycloak public key             │
+│     • Fetch JWKS from: {keycloak}/realms/{realm}/protocol/       │
+│       openid-connect/certs                                       │
+│     • Cache public keys                                          │
+│                                                                   │
+│  3. Validate claims:                                             │
+│     • exp: Token not expired                                     │
+│     • iss: Correct Keycloak issuer                              │
+│     • aud: Contains our API client                              │
+│                                                                   │
+│  4. Extract tenant_id and roles from token                       │
+│                                                                   │
+│  5. Set request context:                                         │
+│     req.user = { id, email, roles, tenant_id }                  │
+│                                                                   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### 8.4 Keycloak Integration Libraries
+
+```javascript
+// Frontend: keycloak-js
+import Keycloak from 'keycloak-js';
+
+const keycloak = new Keycloak({
+  url: 'https://keycloak.example.com',
+  realm: 'legal-opinion-saas',
+  clientId: 'legal-opinion-web'
+});
+
+// Initialize
+await keycloak.init({ 
+  onLoad: 'check-sso',
+  pkceMethod: 'S256'
+});
+
+// Get token for API calls
+const token = keycloak.token;
+```
+
+```typescript
+// Backend: @nestjs/keycloak-connect (NestJS)
+// OR: python-keycloak (FastAPI)
+
+// NestJS Guard Example
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('panel_advocate', 'senior_advocate')
+@Get('/opinions')
+async getOpinions(@Req() req) {
+  const tenantId = req.user.tenant_id;
+  return this.opinionService.findAll(tenantId);
+}
+```
+
+---
+
+## 9. Data Architecture
+
+### 9.1 Entity Relationship Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          DATA MODEL OVERVIEW                                 │
+│                    (All tables have tenant_id column)                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌──────────────┐         ┌──────────────┐         ┌──────────────┐        │
 │  │   TENANTS    │         │    USERS     │         │    ROLES     │        │
 │  ├──────────────┤         ├──────────────┤         ├──────────────┤        │
-│  │ id           │◄───┐    │ id           │    ┌───►│ id           │        │
-│  │ name         │    │    │ tenant_id    │────┤    │ name         │        │
-│  │ code         │    └────│ email        │    │    │ permissions  │        │
-│  │ settings     │         │ role_id      │────┘    │              │        │
-│  │ tier         │         │ profile      │         │              │        │
+│  │ id (PK)      │◄───┐    │ id (PK)      │    ┌───►│ id (PK)      │        │
+│  │ code         │    │    │ tenant_id(FK)│────┤    │ name         │        │
+│  │ name         │    └────│ keycloak_id  │    │    │ permissions  │        │
+│  │ logo_url     │         │ email        │    │    │              │        │
+│  │ primary_color│         │ role_id (FK) │────┘    │              │        │
+│  │ settings     │         │ profile      │         │              │        │
 │  └──────────────┘         └──────┬───────┘         └──────────────┘        │
-│                                  │                                          │
 │                                  │                                          │
 │  ┌──────────────┐         ┌──────▼───────┐         ┌──────────────┐        │
 │  │   BORROWERS  │         │LOAN_REQUESTS │         │   DOCUMENTS  │        │
 │  ├──────────────┤         ├──────────────┤         ├──────────────┤        │
-│  │ id           │◄────────│ id           │────────►│ id           │        │
+│  │ id (PK)      │◄────────│ id (PK)      │────────►│ id (PK)      │        │
 │  │ tenant_id    │         │ tenant_id    │         │ tenant_id    │        │
 │  │ name         │         │ borrower_id  │         │ request_id   │        │
 │  │ contact      │         │ loan_type    │         │ doc_type     │        │
-│  │ address      │         │ amount       │         │ s3_path      │        │
-│  │ kyc_details  │         │ status       │         │ status       │        │
-│  └──────────────┘         │ assigned_to  │         │ metadata     │        │
+│  │ pan_number   │         │ amount       │         │ s3_key       │        │
+│  │ aadhaar      │         │ status       │         │ ocr_text     │        │
+│  └──────────────┘         │ assigned_to  │         │ extracted_data│       │
 │                           └──────┬───────┘         └──────────────┘        │
-│                                  │                                          │
 │                                  │                                          │
 │  ┌──────────────┐         ┌──────▼───────┐         ┌──────────────┐        │
 │  │  TEMPLATES   │         │   OPINIONS   │         │ AUDIT_LOGS   │        │
 │  ├──────────────┤         ├──────────────┤         ├──────────────┤        │
-│  │ id           │────────►│ id           │         │ id           │        │
+│  │ id (PK)      │────────►│ id (PK)      │         │ id (PK)      │        │
 │  │ tenant_id    │         │ tenant_id    │         │ tenant_id    │        │
 │  │ name         │         │ request_id   │         │ entity_type  │        │
 │  │ content      │         │ template_id  │         │ entity_id    │        │
-│  │ doc_type     │         │ content      │         │ action       │        │
+│  │ loan_type    │         │ content      │         │ action       │        │
 │  │              │         │ status       │         │ user_id      │        │
-│  │              │         │ pdf_path     │         │ changes      │        │
-│  └──────────────┘         │ version      │         │ timestamp    │        │
+│  │              │         │ ai_generated │         │ changes      │        │
+│  └──────────────┘         │ pdf_s3_key   │         │ timestamp    │        │
 │                           └──────────────┘         └──────────────┘        │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 8.2 Key Tables Schema
+### 9.2 Key Tables Schema
 
 ```sql
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Tenants Table (Master)
+CREATE TABLE tenants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    logo_url VARCHAR(500),
+    favicon_url VARCHAR(500),
+    primary_color VARCHAR(7) DEFAULT '#1890ff',
+    secondary_color VARCHAR(7) DEFAULT '#52c41a',
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(20),
+    address TEXT,
+    subscription_tier VARCHAR(50) DEFAULT 'standard',
+    max_users INT DEFAULT 100,
+    is_active BOOLEAN DEFAULT true,
+    settings JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Users Table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id),
+    keycloak_id VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    phone VARCHAR(20),
+    role VARCHAR(50) NOT NULL,
+    profile JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, email)
+);
+
 -- Loan Requests Table
 CREATE TABLE loan_requests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id),
+    reference_number VARCHAR(50) NOT NULL,
     borrower_id UUID NOT NULL REFERENCES borrowers(id),
-    reference_number VARCHAR(50) UNIQUE NOT NULL,
-    loan_type VARCHAR(50) NOT NULL,  -- HOME, LAP, COMMERCIAL
+    loan_type VARCHAR(50) NOT NULL,
     loan_amount DECIMAL(15,2),
     property_location TEXT,
     branch_code VARCHAR(20),
     created_by UUID NOT NULL REFERENCES users(id),
     assigned_lawyer_id UUID REFERENCES users(id),
     status VARCHAR(30) DEFAULT 'PENDING',
-    -- PENDING, DOCUMENTS_UPLOADED, IN_REVIEW, OPINION_DRAFT, 
-    -- OPINION_APPROVED, COMPLETED, REJECTED
     priority VARCHAR(20) DEFAULT 'NORMAL',
     due_date DATE,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, reference_number)
 );
 
 -- Documents Table
 CREATE TABLE documents (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id),
     loan_request_id UUID NOT NULL REFERENCES loan_requests(id),
     document_type VARCHAR(50) NOT NULL,
-    -- SALE_DEED, TITLE_DEED, EC, AADHAAR, PAN, etc.
     original_filename VARCHAR(255) NOT NULL,
     s3_key VARCHAR(500) NOT NULL,
-    s3_bucket VARCHAR(100) NOT NULL,
     file_size BIGINT,
     mime_type VARCHAR(100),
-    checksum VARCHAR(64),
-    upload_status VARCHAR(20) DEFAULT 'UPLOADED',
-    scan_status VARCHAR(20) DEFAULT 'PENDING',
-    -- PENDING, SCANNING, CLEAN, INFECTED
-    ocr_status VARCHAR(20),
+    ocr_status VARCHAR(20) DEFAULT 'PENDING',
     ocr_text TEXT,
-    metadata JSONB DEFAULT '{}',
+    extracted_data JSONB,
+    ai_confidence DECIMAL(3,2),
     uploaded_by UUID NOT NULL REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Legal Opinions Table
 CREATE TABLE legal_opinions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id),
     loan_request_id UUID NOT NULL REFERENCES loan_requests(id),
     template_id UUID REFERENCES opinion_templates(id),
-    opinion_number VARCHAR(50) UNIQUE NOT NULL,
+    opinion_number VARCHAR(50) NOT NULL,
     version INT DEFAULT 1,
     status VARCHAR(30) DEFAULT 'DRAFT',
-    -- DRAFT, SUBMITTED, UNDER_REVIEW, REVISION_REQUESTED, 
-    -- APPROVED, REJECTED, PUBLISHED
-    content JSONB NOT NULL,  -- Structured opinion content
+    content JSONB NOT NULL,
     summary TEXT,
-    recommendation VARCHAR(50),  -- POSITIVE, NEGATIVE, CONDITIONAL
-    conditions TEXT[],  -- Array of conditions if CONDITIONAL
+    recommendation VARCHAR(50),
+    conditions TEXT[],
+    ai_generated BOOLEAN DEFAULT false,
+    ai_draft_content JSONB,
     pdf_s3_key VARCHAR(500),
     created_by UUID NOT NULL REFERENCES users(id),
     reviewed_by UUID REFERENCES users(id),
@@ -697,17 +1010,17 @@ CREATE TABLE legal_opinions (
     submitted_at TIMESTAMP,
     approved_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, opinion_number)
 );
 
--- Audit Logs Table (for compliance)
+-- Audit Logs Table
 CREATE TABLE audit_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL,
     entity_type VARCHAR(50) NOT NULL,
     entity_id UUID NOT NULL,
     action VARCHAR(50) NOT NULL,
-    -- CREATE, UPDATE, DELETE, VIEW, DOWNLOAD, STATUS_CHANGE
     old_values JSONB,
     new_values JSONB,
     user_id UUID NOT NULL,
@@ -717,410 +1030,465 @@ CREATE TABLE audit_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- AI/LLM Extraction Results Table
-CREATE TABLE document_extractions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL,
-    document_id UUID NOT NULL REFERENCES documents(id),
-    extraction_type VARCHAR(50) NOT NULL,
-    -- PROPERTY_DETAILS, PARTY_DETAILS, FINANCIAL_DETAILS, etc.
-    raw_text TEXT,
-    extracted_data JSONB NOT NULL,
-    -- Structured extracted fields
-    confidence_score DECIMAL(3,2),
-    -- 0.00 to 1.00
-    llm_model VARCHAR(100),
-    llm_prompt_version VARCHAR(50),
-    requires_review BOOLEAN DEFAULT false,
-    reviewed_by UUID REFERENCES users(id),
-    reviewed_at TIMESTAMP,
-    corrections JSONB,
-    -- Manual corrections made
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- AI-Generated Opinion Drafts Table
-CREATE TABLE opinion_drafts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL,
-    loan_request_id UUID NOT NULL REFERENCES loan_requests(id),
-    template_id UUID REFERENCES opinion_templates(id),
-    generation_prompt TEXT,
-    input_data JSONB NOT NULL,
-    -- Extracted data used
-    generated_content JSONB NOT NULL,
-    llm_model VARCHAR(100),
-    llm_response_metadata JSONB,
-    generation_status VARCHAR(30) DEFAULT 'GENERATED',
-    -- GENERATED, ACCEPTED, REJECTED, MODIFIED
-    accepted_by UUID REFERENCES users(id),
-    accepted_at TIMESTAMP,
-    modifications_made TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create indexes for performance
+-- Indexes
+CREATE INDEX idx_users_tenant ON users(tenant_id);
 CREATE INDEX idx_loan_requests_tenant ON loan_requests(tenant_id);
 CREATE INDEX idx_loan_requests_status ON loan_requests(tenant_id, status);
 CREATE INDEX idx_documents_request ON documents(loan_request_id);
 CREATE INDEX idx_opinions_request ON legal_opinions(loan_request_id);
-CREATE INDEX idx_audit_logs_entity ON audit_logs(tenant_id, entity_type, entity_id);
-CREATE INDEX idx_audit_logs_time ON audit_logs(tenant_id, created_at DESC);
-CREATE INDEX idx_extractions_document ON document_extractions(document_id);
-CREATE INDEX idx_opinion_drafts_request ON opinion_drafts(loan_request_id);
+CREATE INDEX idx_audit_logs_tenant ON audit_logs(tenant_id, created_at DESC);
+
+-- Row Level Security
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE loan_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE legal_opinions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON users
+    USING (tenant_id = current_setting('app.current_tenant')::uuid);
+CREATE POLICY tenant_isolation ON loan_requests
+    USING (tenant_id = current_setting('app.current_tenant')::uuid);
+CREATE POLICY tenant_isolation ON documents
+    USING (tenant_id = current_setting('app.current_tenant')::uuid);
+CREATE POLICY tenant_isolation ON legal_opinions
+    USING (tenant_id = current_setting('app.current_tenant')::uuid);
 ```
 
 ---
 
-## 9. Security Architecture
+## 10. AI/LLM Integration
 
-### 9.1 Security Layers
+### 10.1 OpenAI Integration Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         SECURITY ARCHITECTURE                                │
+│                        OpenAI INTEGRATION                                    │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │ LAYER 1: PERIMETER SECURITY                                            │ │
-│  │  • AWS WAF - Web Application Firewall (SQL injection, XSS protection)  │ │
-│  │  • AWS Shield - DDoS protection                                        │ │
-│  │  • CloudFront - Edge security, Geo-blocking                           │ │
-│  │  • Rate Limiting at API Gateway                                        │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
+│   DOCUMENT EXTRACTION PIPELINE                                              │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐       ││
+│   │   │ Document │───►│  OCR     │───►│ OpenAI   │───►│ Structured│       ││
+│   │   │  (S3)    │    │(Tesseract│    │  GPT-4   │    │   JSON    │       ││
+│   │   │          │    │/Textract)│    │          │    │           │       ││
+│   │   └──────────┘    └──────────┘    └──────────┘    └──────────┘       ││
+│   │                                                                         ││
+│   │   Extraction Prompt:                                                   ││
+│   │   "Extract the following from this property document:                  ││
+│   │    - property_address                                                  ││
+│   │    - seller_name, seller_address                                       ││
+│   │    - buyer_name, buyer_address                                         ││
+│   │    - sale_amount                                                       ││
+│   │    - registration_date, registration_number                            ││
+│   │    - encumbrances                                                      ││
+│   │    Return as JSON with confidence scores."                             ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
 │                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │ LAYER 2: NETWORK SECURITY                                              │ │
-│  │  • VPC with public/private subnets                                     │ │
-│  │  • Security Groups (stateful firewall)                                 │ │
-│  │  • NACLs (stateless firewall)                                          │ │
-│  │  • VPC Flow Logs for monitoring                                        │ │
-│  │  • Private subnets for databases and internal services                 │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │ LAYER 3: IDENTITY & ACCESS                                             │ │
-│  │  • Amazon Cognito for user authentication                              │ │
-│  │  • JWT tokens with short expiry                                        │ │
-│  │  • MFA enforcement for all users                                       │ │
-│  │  • RBAC with fine-grained permissions                                  │ │
-│  │  • Session management with Redis                                       │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │ LAYER 4: DATA SECURITY                                                 │ │
-│  │  • Encryption at rest (RDS, S3 - AES-256)                              │ │
-│  │  • Encryption in transit (TLS 1.3)                                     │ │
-│  │  • S3 bucket policies and ACLs                                         │ │
-│  │  • Database Row-Level Security                                         │ │
-│  │  • Secrets Manager for credentials                                     │ │
-│  │  • Data masking for PII in logs                                        │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │ LAYER 5: APPLICATION SECURITY                                          │ │
-│  │  • Input validation and sanitization                                   │ │
-│  │  • OWASP Top 10 protection                                             │ │
-│  │  • Content Security Policy (CSP)                                       │ │
-│  │  • Anti-virus scanning for uploads                                     │ │
-│  │  • Secure file upload handling                                         │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │ LAYER 6: MONITORING & COMPLIANCE                                       │ │
-│  │  • CloudTrail for API audit logs                                       │ │
-│  │  • GuardDuty for threat detection                                      │ │
-│  │  • Security Hub for compliance dashboard                               │ │
-│  │  • Application audit logs                                              │ │
-│  │  • Alerting on suspicious activities                                   │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
+│   OPINION GENERATION PIPELINE                                               │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                                                                         ││
+│   │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐       ││
+│   │   │ Extracted│    │ Template │    │ OpenAI   │    │   Draft  │       ││
+│   │   │   Data   │+   │ Prompt   │───►│  GPT-4   │───►│  Opinion │       ││
+│   │   │          │    │          │    │          │    │          │       ││
+│   │   └──────────┘    └──────────┘    └──────────┘    └──────────┘       ││
+│   │                                                                         ││
+│   │   Generation Prompt:                                                   ││
+│   │   "Generate a legal opinion for a home loan based on:                  ││
+│   │    - Extracted document data: {json}                                   ││
+│   │    - Template: {template}                                              ││
+│   │    - Bank: {bank_name}                                                 ││
+│   │    Include: title verification, chain of ownership,                    ││
+│   │    encumbrance status, recommendations."                               ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 9.2 Authentication Flow
+### 10.2 AI Service Implementation
 
-```
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│  Client  │     │ Cognito  │     │   API    │     │ Backend  │
-│   App    │     │          │     │ Gateway  │     │ Services │
-└────┬─────┘     └────┬─────┘     └────┬─────┘     └────┬─────┘
-     │                │                │                │
-     │  1. Login      │                │                │
-     │  (email/pass)  │                │                │
-     │───────────────>│                │                │
-     │                │                │                │
-     │  2. MFA        │                │                │
-     │  Challenge     │                │                │
-     │<───────────────│                │                │
-     │                │                │                │
-     │  3. MFA Code   │                │                │
-     │───────────────>│                │                │
-     │                │                │                │
-     │  4. JWT Tokens │                │                │
-     │  (access,      │                │                │
-     │   refresh,     │                │                │
-     │   id token)    │                │                │
-     │<───────────────│                │                │
-     │                │                │                │
-     │  5. API Request with Bearer Token                │
-     │────────────────────────────────>│                │
-     │                │                │                │
-     │                │  6. Validate   │                │
-     │                │     JWT        │                │
-     │                │<───────────────│                │
-     │                │                │                │
-     │                │  7. Token OK   │                │
-     │                │───────────────>│                │
-     │                │                │                │
-     │                │                │  8. Forward    │
-     │                │                │  Request with  │
-     │                │                │  User Context  │
-     │                │                │───────────────>│
-     │                │                │                │
-     │  9. Response   │                │                │
-     │<────────────────────────────────────────────────│
-     │                │                │                │
-```
+```typescript
+// ai.service.ts
 
-### 9.3 Role-Based Access Control (RBAC)
+interface ExtractionResult {
+  fields: Record<string, any>;
+  confidence: Record<string, number>;
+  flags: string[];
+}
 
-| Role | Permissions |
-|------|-------------|
-| **Super Admin** | Platform management, tenant onboarding, global settings |
-| **Bank Admin** | Tenant settings, user management, reports, audit logs |
-| **Bank Officer** | Create requests, upload documents, view opinions |
-| **Panel Advocate** | Review documents, create/edit opinions, submit for approval |
-| **Senior Advocate** | Approve/reject opinions, manage templates |
-| **Viewer** | Read-only access to opinions and reports |
+interface OpinionDraft {
+  content: {
+    title_verification: string;
+    ownership_chain: string;
+    encumbrance_status: string;
+    recommendations: string[];
+  };
+  summary: string;
+  recommendation: 'POSITIVE' | 'NEGATIVE' | 'CONDITIONAL';
+}
 
----
-
-## 10. Infrastructure Design
-
-### 10.1 AWS Infrastructure Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           AWS INFRASTRUCTURE                                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  Region: ap-south-1 (Mumbai)                                                │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                              VPC (10.0.0.0/16)                          │ │
-│  │                                                                         │ │
-│  │  ┌─────────────────────────────────────────────────────────────────┐   │ │
-│  │  │ Availability Zone A (ap-south-1a)                                │   │ │
-│  │  │  ┌──────────────────┐  ┌──────────────────┐                     │   │ │
-│  │  │  │ Public Subnet A  │  │ Private Subnet A │                     │   │ │
-│  │  │  │ 10.0.1.0/24      │  │ 10.0.10.0/24     │                     │   │ │
-│  │  │  │  ┌────────────┐  │  │  ┌────────────┐  │                     │   │ │
-│  │  │  │  │ NAT GW     │  │  │  │ EKS Node   │  │                     │   │ │
-│  │  │  │  │            │  │  │  │ Group A    │  │                     │   │ │
-│  │  │  │  └────────────┘  │  │  └────────────┘  │                     │   │ │
-│  │  │  │  ┌────────────┐  │  │  ┌────────────┐  │                     │   │ │
-│  │  │  │  │ ALB        │  │  │  │ RDS        │  │                     │   │ │
-│  │  │  │  │ (Public)   │  │  │  │ Primary    │  │                     │   │ │
-│  │  │  │  └────────────┘  │  │  └────────────┘  │                     │   │ │
-│  │  │  └──────────────────┘  └──────────────────┘                     │   │ │
-│  │  └─────────────────────────────────────────────────────────────────┘   │ │
-│  │                                                                         │ │
-│  │  ┌─────────────────────────────────────────────────────────────────┐   │ │
-│  │  │ Availability Zone B (ap-south-1b)                                │   │ │
-│  │  │  ┌──────────────────┐  ┌──────────────────┐                     │   │ │
-│  │  │  │ Public Subnet B  │  │ Private Subnet B │                     │   │ │
-│  │  │  │ 10.0.2.0/24      │  │ 10.0.20.0/24     │                     │   │ │
-│  │  │  │  ┌────────────┐  │  │  ┌────────────┐  │                     │   │ │
-│  │  │  │  │ NAT GW     │  │  │  │ EKS Node   │  │                     │   │ │
-│  │  │  │  │            │  │  │  │ Group B    │  │                     │   │ │
-│  │  │  │  └────────────┘  │  │  └────────────┘  │                     │   │ │
-│  │  │  │                  │  │  ┌────────────┐  │                     │   │ │
-│  │  │  │                  │  │  │ RDS        │  │                     │   │ │
-│  │  │  │                  │  │  │ Standby    │  │                     │   │ │
-│  │  │  │                  │  │  └────────────┘  │                     │   │ │
-│  │  │  │                  │  │  ┌────────────┐  │                     │   │ │
-│  │  │  │                  │  │  │ElastiCache │  │                     │   │ │
-│  │  │  │                  │  │  │ Redis      │  │                     │   │ │
-│  │  │  │                  │  │  └────────────┘  │                     │   │ │
-│  │  │  └──────────────────┘  └──────────────────┘                     │   │ │
-│  │  └─────────────────────────────────────────────────────────────────┘   │ │
-│  │                                                                         │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                         Global Services                                 │ │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │ │
-│  │  │   S3     │ │ Cognito  │ │   SES    │ │   SQS    │ │  Secrets │     │ │
-│  │  │ Buckets  │ │User Pool │ │  Email   │ │  Queues  │ │ Manager  │     │ │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘     │ │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │ │
-│  │  │CloudWatch│ │CloudTrail│ │ Route53  │ │CloudFront│ │   WAF    │     │ │
-│  │  │  Logs    │ │  Audit   │ │   DNS    │ │   CDN    │ │Firewall  │     │ │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘     │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 10.2 Kubernetes (EKS) Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        EKS CLUSTER ARCHITECTURE                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                        Namespaces                                       │ │
-│  │                                                                         │ │
-│  │  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐          │ │
-│  │  │  production     │ │   staging       │ │   monitoring    │          │ │
-│  │  │  namespace      │ │   namespace     │ │   namespace     │          │ │
-│  │  └─────────────────┘ └─────────────────┘ └─────────────────┘          │ │
-│  │                                                                         │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                    Production Namespace                                 │ │
-│  │                                                                         │ │
-│  │  ┌────────────────────────────────────────────────────────────────┐    │ │
-│  │  │                      Deployments                                │    │ │
-│  │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐            │    │ │
-│  │  │  │ api-gateway  │ │user-service  │ │doc-service   │            │    │ │
-│  │  │  │ replicas: 3  │ │ replicas: 2  │ │ replicas: 2  │            │    │ │
-│  │  │  └──────────────┘ └──────────────┘ └──────────────┘            │    │ │
-│  │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐            │    │ │
-│  │  │  │opinion-svc   │ │notify-service│ │ audit-service│            │    │ │
-│  │  │  │ replicas: 2  │ │ replicas: 2  │ │ replicas: 2  │            │    │ │
-│  │  │  └──────────────┘ └──────────────┘ └──────────────┘            │    │ │
-│  │  └────────────────────────────────────────────────────────────────┘    │ │
-│  │                                                                         │ │
-│  │  ┌────────────────────────────────────────────────────────────────┐    │ │
-│  │  │                        Services                                 │    │ │
-│  │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐            │    │ │
-│  │  │  │ ClusterIP    │ │ ClusterIP    │ │  LoadBalancer│            │    │ │
-│  │  │  │ (internal)   │ │ (internal)   │ │   (ingress)  │            │    │ │
-│  │  │  └──────────────┘ └──────────────┘ └──────────────┘            │    │ │
-│  │  └────────────────────────────────────────────────────────────────┘    │ │
-│  │                                                                         │ │
-│  │  ┌────────────────────────────────────────────────────────────────┐    │ │
-│  │  │                     Config & Secrets                            │    │ │
-│  │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐            │    │ │
-│  │  │  │ ConfigMaps   │ │ Secrets      │ │ExternalSecrets│           │    │ │
-│  │  │  │              │ │(from AWS SM) │ │  Operator    │            │    │ │
-│  │  │  └──────────────┘ └──────────────┘ └──────────────┘            │    │ │
-│  │  └────────────────────────────────────────────────────────────────┘    │ │
-│  │                                                                         │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                    Monitoring Namespace                                 │ │
-│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                   │ │
-│  │  │ Prometheus   │ │   Grafana    │ │ Fluent Bit   │                   │ │
-│  │  │              │ │              │ │ (log forwarder)                  │ │
-│  │  └──────────────┘ └──────────────┘ └──────────────┘                   │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 10.3 Terraform Module Structure
-
-```
-terraform/
-├── environments/
-│   ├── dev/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── terraform.tfvars
-│   │   └── backend.tf
-│   ├── staging/
-│   │   └── ...
-│   └── prod/
-│       └── ...
-├── modules/
-│   ├── vpc/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   ├── eks/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   ├── rds/
-│   │   └── ...
-│   ├── s3/
-│   │   └── ...
-│   ├── cognito/
-│   │   └── ...
-│   ├── elasticache/
-│   │   └── ...
-│   ├── alb/
-│   │   └── ...
-│   └── monitoring/
-│       └── ...
-└── README.md
+class AIService {
+  
+  async extractDocumentData(
+    documentId: string, 
+    ocrText: string, 
+    documentType: string
+  ): Promise<ExtractionResult> {
+    
+    const prompt = this.buildExtractionPrompt(documentType, ocrText);
+    
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4-turbo-preview',
+      messages: [
+        { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.2
+    });
+    
+    return JSON.parse(response.choices[0].message.content);
+  }
+  
+  async generateOpinionDraft(
+    requestId: string,
+    extractedData: Record<string, any>,
+    templateId: string
+  ): Promise<OpinionDraft> {
+    
+    const template = await this.templateService.findById(templateId);
+    const prompt = this.buildGenerationPrompt(extractedData, template);
+    
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4-turbo-preview',
+      messages: [
+        { role: 'system', content: GENERATION_SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.4
+    });
+    
+    return JSON.parse(response.choices[0].message.content);
+  }
+}
 ```
 
 ---
 
-## 11. CI/CD Pipeline
+## 11. Infrastructure Design
 
-### 11.1 GitHub Actions Workflow
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           CI/CD PIPELINE                                     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                         CONTINUOUS INTEGRATION                          │ │
-│  │                                                                         │ │
-│  │   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐              │ │
-│  │   │  Code   │   │  Lint   │   │  Test   │   │  Build  │              │ │
-│  │   │  Push   │──►│  Check  │──►│ (Unit)  │──►│ Docker  │              │ │
-│  │   │         │   │         │   │         │   │  Image  │              │ │
-│  │   └─────────┘   └─────────┘   └─────────┘   └─────────┘              │ │
-│  │                                                     │                  │ │
-│  │                                                     ▼                  │ │
-│  │   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐              │ │
-│  │   │Security │   │  SAST   │   │Container│   │  Push   │              │ │
-│  │   │  Scan   │◄──│  Scan   │◄──│  Scan   │◄──│   ECR   │              │ │
-│  │   │         │   │(SonarQube)  │(Trivy)  │   │         │              │ │
-│  │   └─────────┘   └─────────┘   └─────────┘   └─────────┘              │ │
-│  │                                                                         │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                      │                                       │
-│                                      ▼                                       │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                        CONTINUOUS DEPLOYMENT                            │ │
-│  │                                                                         │ │
-│  │  ┌───────────────────────────────────────────────────────────────┐     │ │
-│  │  │                    Development (Auto Deploy)                   │     │ │
-│  │  │   PR Merge ──► Deploy to Dev EKS ──► Integration Tests        │     │ │
-│  │  └───────────────────────────────────────────────────────────────┘     │ │
-│  │                                      │                                  │ │
-│  │                                      ▼                                  │ │
-│  │  ┌───────────────────────────────────────────────────────────────┐     │ │
-│  │  │                    Staging (Manual Approval)                   │     │ │
-│  │  │   Tag Release ──► Approval ──► Deploy ──► E2E Tests           │     │ │
-│  │  └───────────────────────────────────────────────────────────────┘     │ │
-│  │                                      │                                  │ │
-│  │                                      ▼                                  │ │
-│  │  ┌───────────────────────────────────────────────────────────────┐     │ │
-│  │  │                   Production (Canary/Blue-Green)               │     │ │
-│  │  │   Approval ──► Canary 10% ──► Monitor ──► Full Rollout        │     │ │
-│  │  └───────────────────────────────────────────────────────────────┘     │ │
-│  │                                                                         │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 11.2 Pipeline Configuration (GitHub Actions)
+### 11.1 Development Environment (Docker Compose)
 
 ```yaml
-# .github/workflows/ci-cd.yml (example structure)
+# docker-compose.yml (Development)
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_KEYCLOAK_URL=http://localhost:8180
+    volumes:
+      - ./frontend/src:/app/src
+    depends_on:
+      - backend
+      - keycloak
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/legal_opinion
+      - REDIS_URL=redis://redis:6379
+      - S3_ENDPOINT=http://minio:9000
+      - KEYCLOAK_URL=http://keycloak:8080
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      - db
+      - redis
+      - minio
+      - keycloak
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    ports:
+      - "8180:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://db:5432/keycloak
+      - KC_DB_USERNAME=postgres
+      - KC_DB_PASSWORD=postgres
+    command: start-dev
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  postgres_data:
+  minio_data:
+```
+
+### 11.2 Production Environment (Kubernetes + AWS)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PRODUCTION INFRASTRUCTURE (AWS)                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   ┌────────────────────────────────────────────────────────────────────────┐│
+│   │                        AWS ACCOUNT                                      ││
+│   │                                                                         ││
+│   │   Internet                                                             ││
+│   │      │                                                                  ││
+│   │      ▼                                                                  ││
+│   │   ┌──────────────┐                                                     ││
+│   │   │ Route 53     │  DNS: *.legalopinion.com                           ││
+│   │   └──────┬───────┘                                                     ││
+│   │          │                                                              ││
+│   │          ▼                                                              ││
+│   │   ┌──────────────┐                                                     ││
+│   │   │ CloudFront   │  CDN + SSL termination                             ││
+│   │   └──────┬───────┘                                                     ││
+│   │          │                                                              ││
+│   │   ┌──────┴───────┬─────────────────────────────────────┐              ││
+│   │   │              │                                      │              ││
+│   │   ▼              ▼                                      ▼              ││
+│   │ ┌────────┐  ┌────────────┐                        ┌────────────┐      ││
+│   │ │   S3   │  │    ALB     │                        │  Keycloak  │      ││
+│   │ │(Static)│  │ (API LB)   │                        │   (EC2)    │      ││
+│   │ └────────┘  └─────┬──────┘                        └────────────┘      ││
+│   │                   │                                                    ││
+│   │   ┌───────────────┴───────────────┐                                   ││
+│   │   │         VPC (10.0.0.0/16)     │                                   ││
+│   │   │                               │                                   ││
+│   │   │   ┌─────────────────────────┐ │                                   ││
+│   │   │   │    EKS Cluster          │ │                                   ││
+│   │   │   │                         │ │                                   ││
+│   │   │   │  ┌─────────┐ ┌────────┐ │ │                                   ││
+│   │   │   │  │Frontend │ │Backend │ │ │                                   ││
+│   │   │   │  │ Pods    │ │ Pods   │ │ │                                   ││
+│   │   │   │  │ (2-5)   │ │(3-10)  │ │ │                                   ││
+│   │   │   │  └─────────┘ └────────┘ │ │                                   ││
+│   │   │   │                         │ │                                   ││
+│   │   │   └─────────────────────────┘ │                                   ││
+│   │   │                               │                                   ││
+│   │   │   ┌─────────────────────────┐ │                                   ││
+│   │   │   │    Data Layer           │ │                                   ││
+│   │   │   │                         │ │                                   ││
+│   │   │   │  ┌─────────┐ ┌────────┐ │ │                                   ││
+│   │   │   │  │  RDS    │ │ Redis  │ │ │                                   ││
+│   │   │   │  │PostgreSQL││ElastiC │ │ │                                   ││
+│   │   │   │  │(Multi-AZ)││        │ │ │                                   ││
+│   │   │   │  └─────────┘ └────────┘ │ │                                   ││
+│   │   │   │                         │ │                                   ││
+│   │   │   └─────────────────────────┘ │                                   ││
+│   │   │                               │                                   ││
+│   │   └───────────────────────────────┘                                   ││
+│   │                                                                         ││
+│   │   ┌─────────────────────────────────────────────────────────────────┐  ││
+│   │   │  S3 Buckets                                                      │  ││
+│   │   │  • legal-opinion-documents (tenant folders)                     │  ││
+│   │   │  • legal-opinion-static (frontend assets)                       │  ││
+│   │   └─────────────────────────────────────────────────────────────────┘  ││
+│   │                                                                         ││
+│   └────────────────────────────────────────────────────────────────────────┘│
+│                                                                              │
+│   External Services:                                                        │
+│   • OpenAI API (api.openai.com)                                            │
+│   • AWS SES (Email)                                                         │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 12. UI Screens
+
+### 12.1 Screen Inventory
+
+The following UI screens are required for the application. Mock HTML files and screenshots are available in the `ui-mockups/` folder.
+
+---
+
+#### 12.1.1 Login Page
+**File:** [ui-mockups/01-login.html](ui-mockups/01-login.html)
+
+Tenant-branded login page with Keycloak SSO integration. Branding (logo, colors) loaded from tenant config.
+
+![Login Page](ui-mockups/01-login.png)
+
+---
+
+#### 12.1.2 Dashboard
+**File:** [ui-mockups/02-dashboard.html](ui-mockups/02-dashboard.html)
+
+Overview with key metrics, pending tasks, and recent activity.
+
+![Dashboard](ui-mockups/02-dashboard.png)
+
+---
+
+#### 12.1.3 Loan Requests List
+**File:** [ui-mockups/03-loan-requests.html](ui-mockups/03-loan-requests.html)
+
+List of all loan requests with search, filters (status, loan type, priority), and pagination.
+
+![Loan Requests List](ui-mockups/03-loan-requests.png)
+
+---
+
+#### 12.1.4 Loan Request Detail
+**File:** [ui-mockups/04-loan-request-detail.html](ui-mockups/04-loan-request-detail.html)
+
+Single request view with borrower details, documents list, quick actions, and activity timeline.
+
+![Loan Request Detail](ui-mockups/04-loan-request-detail.png)
+
+---
+
+#### 12.1.5 Document Upload
+**File:** [ui-mockups/05-document-upload.html](ui-mockups/05-document-upload.html)
+
+Drag-drop document upload with category selection and AI processing status.
+
+![Document Upload](ui-mockups/05-document-upload.png)
+
+---
+
+#### 12.1.6 Document Viewer
+**File:** [ui-mockups/06-document-viewer.html](ui-mockups/06-document-viewer.html)
+
+View document with AI-extracted data panel showing property details, party information, and confidence scores.
+
+![Document Viewer](ui-mockups/06-document-viewer.png)
+
+---
+
+#### 12.1.7 Opinion Editor
+**File:** [ui-mockups/07-opinion-editor.html](ui-mockups/07-opinion-editor.html)
+
+Create/edit legal opinion with AI assistance. Features document summary, rich text editor, and AI suggestions.
+
+![Opinion Editor](ui-mockups/07-opinion-editor.png)
+
+---
+
+#### 12.1.8 User Management
+**File:** [ui-mockups/08-user-management.html](ui-mockups/08-user-management.html)
+
+Admin screen for user CRUD operations with role management.
+
+![User Management](ui-mockups/08-user-management.png)
+
+---
+
+#### 12.1.9 Tenant Settings
+**File:** [ui-mockups/09-tenant-settings.html](ui-mockups/09-tenant-settings.html)
+
+Admin screen for tenant branding (logo, colors), organization info, and feature settings.
+
+![Tenant Settings](ui-mockups/09-tenant-settings.png)
+
+---
+
+#### 12.1.10 Reports & Analytics
+**File:** [ui-mockups/10-reports.html](ui-mockups/10-reports.html)
+
+Analytics dashboard with charts, recent opinions table, and activity feed.
+
+![Reports & Analytics](ui-mockups/10-reports.png)
+
+---
+
+### 12.2 Screen Flow
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           USER FLOW DIAGRAM                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   ┌─────────┐      ┌───────────┐      ┌─────────────────┐                   │
+│   │  LOGIN  │─────►│ DASHBOARD │─────►│ LOAN REQUESTS   │                   │
+│   │         │      │           │      │     LIST        │                   │
+│   └─────────┘      └───────────┘      └────────┬────────┘                   │
+│                                                │                             │
+│                          ┌─────────────────────┼─────────────────────┐       │
+│                          │                     │                     │       │
+│                          ▼                     ▼                     ▼       │
+│                   ┌─────────────┐       ┌─────────────┐       ┌───────────┐ │
+│                   │ NEW REQUEST │       │   REQUEST   │       │  REPORTS  │ │
+│                   │   FORM      │       │   DETAIL    │       │           │ │
+│                   └──────┬──────┘       └──────┬──────┘       └───────────┘ │
+│                          │                     │                             │
+│                          ▼                     ▼                             │
+│                   ┌─────────────┐       ┌─────────────┐                     │
+│                   │  DOCUMENT   │       │  DOCUMENT   │                     │
+│                   │   UPLOAD    │       │   VIEWER    │                     │
+│                   └─────────────┘       └──────┬──────┘                     │
+│                                                │                             │
+│                                                ▼                             │
+│                                         ┌─────────────┐                     │
+│                                         │   OPINION   │                     │
+│                                         │   EDITOR    │                     │
+│                                         │ (AI Assist) │                     │
+│                                         └─────────────┘                     │
+│                                                                               │
+│   ADMIN FLOW:                                                                │
+│   ┌─────────────┐       ┌─────────────┐                                     │
+│   │    USER     │       │   TENANT    │                                     │
+│   │ MANAGEMENT  │       │  SETTINGS   │                                     │
+│   └─────────────┘       └─────────────┘                                     │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 13. CI/CD Pipeline
+
+### 13.1 GitHub Actions Workflow
+
+```yaml
+# .github/workflows/ci-cd.yml
 name: CI/CD Pipeline
 
 on:
@@ -1130,203 +1498,114 @@ on:
     branches: [main]
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run ESLint
-        run: npm run lint
-      
   test:
     runs-on: ubuntu-latest
-    needs: lint
     steps:
       - uses: actions/checkout@v4
-      - name: Run Tests
-        run: npm run test:coverage
-      
-  security-scan:
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
-      
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          npm ci
+          npm run test
+      - name: Run Frontend Tests
+        run: |
+          cd frontend
+          npm ci
+          npm run test
+
   build:
+    needs: test
     runs-on: ubuntu-latest
-    needs: [test, security-scan]
     steps:
-      - name: Build Docker Image
-        run: docker build -t $ECR_REPO:$GITHUB_SHA .
-      - name: Trivy Container Scan
-        uses: aquasecurity/trivy-action@master
+      - name: Build Docker Images
+        run: |
+          docker build -t backend:${{ github.sha }} ./backend
+          docker build -t frontend:${{ github.sha }} ./frontend
       - name: Push to ECR
-        run: docker push $ECR_REPO:$GITHUB_SHA
-        
+        run: |
+          aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REGISTRY
+          docker push $ECR_REGISTRY/backend:${{ github.sha }}
+          docker push $ECR_REGISTRY/frontend:${{ github.sha }}
+
   deploy-dev:
-    runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/develop'
-    environment: development
-    steps:
-      - name: Deploy to Dev EKS
-        run: kubectl apply -k overlays/dev
-        
-  deploy-prod:
     runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Dev
+        run: |
+          kubectl set image deployment/backend backend=$ECR_REGISTRY/backend:${{ github.sha }}
+          kubectl set image deployment/frontend frontend=$ECR_REGISTRY/frontend:${{ github.sha }}
+
+  deploy-prod:
     needs: build
     if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Deploy to Prod EKS
-        run: kubectl apply -k overlays/prod
+      - name: Deploy to Production
+        run: |
+          kubectl set image deployment/backend backend=$ECR_REGISTRY/backend:${{ github.sha }}
+          kubectl set image deployment/frontend frontend=$ECR_REGISTRY/frontend:${{ github.sha }}
 ```
 
 ---
 
-## 12. Non-Functional Requirements
-
-### 12.1 Performance Requirements
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| API Response Time (P95) | < 500ms | CloudWatch Metrics |
-| Page Load Time | < 3s | Lighthouse |
-| Document Upload | < 30s for 50MB | Application Logs |
-| Concurrent Users | 500 per tenant | Load Testing |
-| Database Query Time | < 100ms | RDS Insights |
-
-### 12.2 Availability & Reliability
+## 14. Non-Functional Requirements
 
 | Metric | Target |
 |--------|--------|
+| API Response Time (P95) | < 500ms |
+| Page Load Time | < 3s |
+| Document Upload | < 30s for 50MB |
+| Concurrent Users | 500 per tenant |
 | Uptime SLA | 99.9% |
-| RTO (Recovery Time Objective) | < 4 hours |
-| RPO (Recovery Point Objective) | < 1 hour |
-| Backup Frequency | Daily full, hourly incremental |
-
-### 12.3 Scalability
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    SCALABILITY STRATEGY                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Horizontal Scaling (Auto-scaling):                             │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  EKS Pods: HPA (Horizontal Pod Autoscaler)              │    │
-│  │  - Scale on CPU > 70%                                   │    │
-│  │  - Scale on Memory > 80%                                │    │
-│  │  - Min: 2, Max: 10 replicas per service                 │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  EKS Nodes: Cluster Autoscaler                          │    │
-│  │  - Scale based on pending pods                          │    │
-│  │  - Min: 3, Max: 20 nodes                                │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                  │
-│  Vertical Scaling:                                              │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  RDS: Scale up instance type as needed                  │    │
-│  │  - Start: db.r6g.large                                  │    │
-│  │  - Max: db.r6g.4xlarge                                  │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 12.4 Monitoring & Observability
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                  OBSERVABILITY STACK                             │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  METRICS:                                                        │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐        │
-│  │ Prometheus  │────►│  Grafana    │────►│  Alerting   │        │
-│  │ (collect)   │     │(visualize)  │     │ (PagerDuty) │        │
-│  └─────────────┘     └─────────────┘     └─────────────┘        │
-│                                                                  │
-│  LOGS:                                                           │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐        │
-│  │ Fluent Bit  │────►│ CloudWatch  │────►│  OpenSearch │        │
-│  │ (collect)   │     │   Logs      │     │(search/view)│        │
-│  └─────────────┘     └─────────────┘     └─────────────┘        │
-│                                                                  │
-│  TRACES:                                                         │
-│  ┌─────────────┐     ┌─────────────┐                            │
-│  │   X-Ray     │────►│  Service    │                            │
-│  │ (tracing)   │     │    Map      │                            │
-│  └─────────────┘     └─────────────┘                            │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+| RTO | < 4 hours |
+| RPO | < 1 hour |
 
 ---
 
-## 13. Cost Estimation
+## 15. Cost Estimation
 
-### 13.1 Monthly Cost Breakdown (Production)
+### 15.1 Monthly Cost (Production)
 
-| Service | Configuration | Est. Monthly Cost |
-|---------|---------------|-------------------|
+| Service | Configuration | Est. Cost |
+|---------|---------------|-----------|
 | **EKS Cluster** | 1 cluster | $73 |
-| **EC2 (EKS Nodes)** | 3x m5.large (on-demand) | $210 |
-| **RDS PostgreSQL** | db.r6g.large, Multi-AZ | $350 |
-| **ElastiCache Redis** | cache.r6g.large | $180 |
-| **S3 Storage** | 500GB + requests | $50 |
-| **ALB** | 1 ALB + traffic | $50 |
-| **CloudFront** | 500GB transfer | $60 |
-| **NAT Gateway** | 2 gateways | $90 |
-| **Route 53** | Hosted zone + queries | $10 |
-| **Cognito** | 10,000 MAU | $50 |
-| **SES** | 50,000 emails | $5 |
-| **CloudWatch** | Logs + metrics | $50 |
-| **Secrets Manager** | 20 secrets | $10 |
-| **WAF** | Rules + requests | $30 |
-| **Data Transfer** | 100GB | $10 |
-| **Amazon Textract** | 10,000 pages/month | $150 |
-| **Amazon Bedrock (LLM)** | ~500K tokens/day (Claude) | $300-500 |
-| **TOTAL** | | **~$1,700-1,900/month** |
-
-*Note: LLM costs can vary significantly based on usage. Consider token optimization and caching strategies.*
-
-### 13.2 Cost Optimization Strategies
-
-1. **Reserved Instances**: 40-60% savings on EC2, RDS
-2. **Spot Instances**: For non-production EKS nodes
-3. **S3 Lifecycle Policies**: Move old documents to Glacier
-4. **Right-sizing**: Regular review of instance utilization
-5. **Savings Plans**: Compute savings plans for predictable workloads
+| **EC2 (EKS Nodes)** | 3x t3.large | $150 |
+| **RDS PostgreSQL** | db.t3.large, Multi-AZ | $250 |
+| **ElastiCache Redis** | cache.t3.medium | $80 |
+| **S3 Storage** | 500GB | $15 |
+| **CloudFront** | 500GB transfer | $50 |
+| **ALB** | 1 ALB | $25 |
+| **Keycloak EC2** | t3.medium | $35 |
+| **OpenAI API** | ~100K requests | $200-400 |
+| **SES** | 50K emails | $5 |
+| **TOTAL** | | **~$900-1,100/month** |
 
 ---
 
-## 14. Risks & Mitigations
+## 16. Risks & Mitigations
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| Data breach | High | Medium | Encryption, WAF, regular audits |
-| Multi-tenant data leakage | High | Low | RLS, code reviews, penetration testing |
-| Vendor lock-in (AWS) | Medium | Medium | Use Kubernetes for portability |
-| Performance degradation | Medium | Medium | Auto-scaling, caching, monitoring |
-| Compliance violations | High | Low | Regular audits, audit logging |
-| Key person dependency | Medium | Medium | Documentation, cross-training |
-| Cost overrun | Medium | Medium | Budget alerts, cost monitoring |
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Data breach | High | Encryption, WAF, regular audits |
+| Multi-tenant data leakage | High | RLS, code reviews, pen testing |
+| OpenAI API downtime | Medium | Fallback to manual, caching |
+| Cost overrun (AI) | Medium | Token limits, monitoring |
+| Keycloak single point of failure | Medium | HA deployment, backups |
 
 ---
 
-## Appendix A: API Endpoints (Sample)
+## Appendix A: API Endpoints
 
 ```yaml
-# Core API Endpoints
+# Authentication (Keycloak)
+GET    /auth/realms/legal-opinion-saas/protocol/openid-connect/auth
+POST   /auth/realms/legal-opinion-saas/protocol/openid-connect/token
 
-# Authentication
-POST   /api/v1/auth/login
-POST   /api/v1/auth/logout
-POST   /api/v1/auth/refresh
-POST   /api/v1/auth/mfa/verify
+# Tenant Config (Public)
+GET    /api/v1/tenants/config?code={code}
 
 # Loan Requests
 GET    /api/v1/loan-requests
@@ -1334,14 +1613,13 @@ POST   /api/v1/loan-requests
 GET    /api/v1/loan-requests/{id}
 PUT    /api/v1/loan-requests/{id}
 PATCH  /api/v1/loan-requests/{id}/status
-GET    /api/v1/loan-requests/{id}/documents
-GET    /api/v1/loan-requests/{id}/opinions
+PATCH  /api/v1/loan-requests/{id}/assign
 
 # Documents
 POST   /api/v1/documents/upload
 GET    /api/v1/documents/{id}
 GET    /api/v1/documents/{id}/download
-DELETE /api/v1/documents/{id}
+POST   /api/v1/documents/{id}/extract  # AI extraction
 
 # Opinions
 GET    /api/v1/opinions
@@ -1350,13 +1628,18 @@ GET    /api/v1/opinions/{id}
 PUT    /api/v1/opinions/{id}
 PATCH  /api/v1/opinions/{id}/status
 GET    /api/v1/opinions/{id}/pdf
+POST   /api/v1/opinions/{id}/generate-draft  # AI generation
 
 # Users (Admin)
 GET    /api/v1/users
 POST   /api/v1/users
-GET    /api/v1/users/{id}
 PUT    /api/v1/users/{id}
 DELETE /api/v1/users/{id}
+
+# Tenant Settings (Admin)
+GET    /api/v1/tenant/settings
+PUT    /api/v1/tenant/settings
+PUT    /api/v1/tenant/branding
 
 # Reports
 GET    /api/v1/reports/dashboard
@@ -1366,65 +1649,12 @@ GET    /api/v1/reports/audit-logs
 
 ---
 
-## Appendix B: Folder Structure
-
-```
-legal-opinion-saas/
-├── frontend/                    # React Frontend
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── store/
-│   │   ├── hooks/
-│   │   ├── utils/
-│   │   └── types/
-│   ├── Dockerfile
-│   └── package.json
-│
-├── backend/                     # Backend Services
-│   ├── api-gateway/
-│   │   ├── src/
-│   │   ├── Dockerfile
-│   │   └── package.json
-│   ├── user-service/
-│   ├── document-service/
-│   ├── opinion-service/
-│   ├── notification-service/
-│   └── audit-service/
-│
-├── infrastructure/              # Terraform IaC
-│   ├── terraform/
-│   │   ├── environments/
-│   │   └── modules/
-│   └── k8s/
-│       ├── base/
-│       └── overlays/
-│
-├── .github/                     # GitHub Actions
-│   └── workflows/
-│       ├── ci.yml
-│       ├── cd-dev.yml
-│       └── cd-prod.yml
-│
-├── docs/                        # Documentation
-│   ├── HLD.md
-│   ├── API.md
-│   └── RUNBOOK.md
-│
-└── scripts/                     # Utility scripts
-    ├── setup-local.sh
-    └── db-migrate.sh
-```
-
----
-
 **Document Control**
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | Jan 2026 | Solution Architect | Initial draft |
+| 2.0 | Jan 2026 | Solution Architect | Traditional 3-tier, Keycloak, OpenAI, UI mockups |
 
 ---
 

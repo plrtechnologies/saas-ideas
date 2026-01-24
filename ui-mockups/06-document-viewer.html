@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Viewer - Legal Opinion Platform</title>
+    <style>
+        :root { --primary-color: #004C8F; --bg-color: #f3f4f6; --sidebar-bg: #1e293b; --card-bg: #ffffff; --text-primary: #1f2937; --text-secondary: #6b7280; --border-color: #e5e7eb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary); }
+        .breadcrumb a { color: var(--primary-color); text-decoration: none; }
+        .page-title { font-size: 20px; font-weight: 600; color: var(--text-primary); margin-top: 4px; }
+        
+        .viewer-container { flex: 1; display: grid; grid-template-columns: 1fr 400px; overflow: hidden; }
+        
+        /* Document Preview Panel */
+        .doc-preview { background: #2d3748; display: flex; flex-direction: column; }
+        .preview-toolbar { background: #1a202c; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .toolbar-group { display: flex; gap: 8px; }
+        .tool-btn { padding: 8px 12px; background: rgba(255,255,255,0.1); border: none; border-radius: 6px; color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .tool-btn:hover { background: rgba(255,255,255,0.2); }
+        .zoom-control { display: flex; align-items: center; gap: 8px; color: white; font-size: 14px; }
+        .zoom-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border: none; border-radius: 6px; color: white; cursor: pointer; }
+        
+        .preview-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; overflow: auto; }
+        .doc-placeholder { width: 100%; max-width: 600px; background: white; aspect-ratio: 8.5/11; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); padding: 40px; font-size: 14px; color: #333; }
+        .doc-placeholder h2 { font-size: 18px; margin-bottom: 16px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 12px; }
+        .doc-placeholder p { margin-bottom: 12px; line-height: 1.6; }
+        .doc-highlight { background: rgba(255, 235, 59, 0.4); padding: 2px 4px; }
+        
+        /* Extracted Data Panel */
+        .extracted-panel { background: white; display: flex; flex-direction: column; border-left: 1px solid var(--border-color); }
+        .panel-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .panel-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .ai-badge { padding: 4px 10px; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        
+        .panel-content { flex: 1; overflow-y: auto; padding: 20px; }
+        
+        .confidence-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f0fdf4; border-radius: 8px; margin-bottom: 20px; }
+        .confidence-bar .icon { font-size: 20px; }
+        .confidence-text { flex: 1; }
+        .confidence-label { font-size: 12px; color: var(--text-secondary); }
+        .confidence-value { font-size: 16px; font-weight: 600; color: #166534; }
+        
+        .section { margin-bottom: 24px; }
+        .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; cursor: pointer; }
+        .section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+        .section-badge { padding: 2px 8px; background: var(--bg-color); border-radius: 12px; font-size: 11px; color: var(--text-secondary); }
+        
+        .field-list { list-style: none; }
+        .field-item { padding: 12px; background: var(--bg-color); border-radius: 8px; margin-bottom: 8px; }
+        .field-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 4px; }
+        .field-value { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+        .field-confidence { font-size: 11px; color: #16a34a; margin-top: 4px; }
+        .field-confidence.low { color: #d97706; }
+        
+        .edit-btn { padding: 4px 8px; background: white; border: 1px solid var(--border-color); border-radius: 4px; font-size: 11px; color: var(--text-secondary); cursor: pointer; float: right; }
+        
+        .panel-footer { padding: 16px 20px; border-top: 1px solid var(--border-color); display: flex; gap: 12px; }
+        .btn { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; text-align: center; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-primary { background: var(--primary-color); color: white; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">HDFC BANK</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">Dashboard</a>
+            <a href="03-loan-requests.html" class="nav-item">Loan Requests</a>
+            <a href="#" class="nav-item active">Documents</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <div class="breadcrumb">
+                    <a href="04-loan-request-detail.html">REQ-2024-0127</a>
+                    <span>›</span>
+                    <span>Documents</span>
+                    <span>›</span>
+                    <span>Sale_Deed_2024.pdf</span>
+                </div>
+                <h1 class="page-title">Sale_Deed_2024.pdf</h1>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline" style="padding: 8px 16px;">Download</button>
+            </div>
+        </header>
+        
+        <div class="viewer-container">
+            <!-- Document Preview -->
+            <div class="doc-preview">
+                <div class="preview-toolbar">
+                    <div class="toolbar-group">
+                        <button class="tool-btn">◀ Prev</button>
+                        <span style="color: white; font-size: 14px;">Page 1 of 8</span>
+                        <button class="tool-btn">Next ▶</button>
+                    </div>
+                    <div class="zoom-control">
+                        <button class="zoom-btn">−</button>
+                        <span>100%</span>
+                        <button class="zoom-btn">+</button>
+                    </div>
+                    <div class="toolbar-group">
+                        <button class="tool-btn">🔍 Search</button>
+                        <button class="tool-btn">📋 Highlight</button>
+                    </div>
+                </div>
+                <div class="preview-content">
+                    <div class="doc-placeholder">
+                        <h2>SALE DEED</h2>
+                        <p>This Deed of Sale is executed on this <span class="doc-highlight">15th day of January, 2024</span> at Mumbai.</p>
+                        <p><strong>BETWEEN</strong></p>
+                        <p><span class="doc-highlight">Mr. Suresh Mehta</span>, son of Late Ramesh Mehta, residing at 45, Hill Road, Bandra West, Mumbai - 400050 (hereinafter called the "SELLER")</p>
+                        <p><strong>AND</strong></p>
+                        <p><span class="doc-highlight">Mr. Rajesh Kumar</span>, son of Mr. Harish Kumar, residing at 78, Carter Road, Bandra West, Mumbai - 400050 (hereinafter called the "PURCHASER")</p>
+                        <p><strong>PROPERTY DESCRIPTION</strong></p>
+                        <p><span class="doc-highlight">Flat No. 402, 4th Floor, Sea View Apartments</span>, Survey No. 123, CTS No. 456, 14th Road, Bandra West, Mumbai - 400050, admeasuring <span class="doc-highlight">1,250 square feet</span> (carpet area)...</p>
+                        <p><strong>CONSIDERATION</strong></p>
+                        <p>The total sale consideration is <span class="doc-highlight">Rs. 1,85,00,000/- (Rupees One Crore Eighty Five Lakhs Only)</span>...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Extracted Data Panel -->
+            <div class="extracted-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">AI Extracted Data</h2>
+                    <span class="ai-badge">🤖 GPT-4</span>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="confidence-bar">
+                        <span class="icon">✓</span>
+                        <div class="confidence-text">
+                            <div class="confidence-label">Extraction Confidence</div>
+                            <div class="confidence-value">94% High Confidence</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Property Details -->
+                    <div class="section">
+                        <div class="section-header">
+                            <span class="section-title">Property Details</span>
+                            <span class="section-badge">5 fields</span>
+                        </div>
+                        <ul class="field-list">
+                            <li class="field-item">
+                                <button class="edit-btn">Edit</button>
+                                <div class="field-label">Property Address</div>
+                                <div class="field-value">Flat 402, Sea View Apartments, 14th Road, Bandra West, Mumbai - 400050</div>
+                                <div class="field-confidence">98% confidence</div>
+                            </li>
+                            <li class="field-item">
+                                <button class="edit-btn">Edit</button>
+                                <div class="field-label">Area (Carpet)</div>
+                                <div class="field-value">1,250 sq. ft.</div>
+                                <div class="field-confidence">96% confidence</div>
+                            </li>
+                            <li class="field-item">
+                                <button class="edit-btn">Edit</button>
+                                <div class="field-label">Survey Number</div>
+                                <div class="field-value">123</div>
+                                <div class="field-confidence">95% confidence</div>
+                            </li>
+                            <li class="field-item">
+                                <button class="edit-btn">Edit</button>
+                                <div class="field-label">CTS Number</div>
+                                <div class="field-value">456</div>
+                                <div class="field-confidence">95% confidence</div>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Party Details -->
+                    <div class="section">
+                        <div class="section-header">
+                            <span class="section-title">Party Details</span>
+                            <span class="section-badge">4 fields</span>
+                        </div>
+                        <ul class="field-list">
+                            <li class="field-item">
+                                <button class="edit-btn">Edit</button>
+                                <div class="field-label">Seller Name</div>
+                                <div class="field-value">Mr. Suresh Mehta</div>
+                                <div class="field-confidence">99% confidence</div>
+                            </li>
+                            <li class="field-item">
+                                <button class="edit-btn">Edit</button>
+                                <div class="field-label">Purchaser Name</div>
+                                <div class="field-value">Mr. Rajesh Kumar</div>
+                                <div class="field-confidence">99% confidence</div>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Financial Details -->
+                    <div class="section">
+                        <div class="section-header">
+                            <span class="section-title">Financial Details</span>
+                            <span class="section-badge">2 fields</span>
+                        </div>
+                        <ul class="field-list">
+                            <li class="field-item">
+                                <button class="edit-btn">Edit</button>
+                                <div class="field-label">Sale Consideration</div>
+                                <div class="field-value">₹1,85,00,000</div>
+                                <div class="field-confidence">97% confidence</div>
+                            </li>
+                            <li class="field-item">
+                                <button class="edit-btn">Edit</button>
+                                <div class="field-label">Registration Date</div>
+                                <div class="field-value">15th January, 2024</div>
+                                <div class="field-confidence">98% confidence</div>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Flags -->
+                    <div class="section">
+                        <div class="section-header">
+                            <span class="section-title">⚠️ Review Flags</span>
+                        </div>
+                        <div style="padding: 12px; background: #fef3c7; border-radius: 8px; font-size: 13px; color: #92400e;">
+                            <strong>Low confidence detected:</strong> Registration number could not be clearly extracted. Manual verification recommended.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel-footer">
+                    <button class="btn btn-outline">Re-extract</button>
+                    <button class="btn btn-primary">Confirm Data</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

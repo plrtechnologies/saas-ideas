@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Legal Opinion Platform</title>
+    <style>
+        :root {
+            --primary-color: #004C8F;
+            --secondary-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --bg-color: #f3f4f6;
+            --sidebar-bg: #1e293b;
+            --card-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-color);
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: white;
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-logo {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-logo img {
+            height: 40px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+        
+        .sidebar-logo .logo-placeholder {
+            background: var(--primary-color);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .sidebar-nav {
+            padding: 24px 12px;
+            flex: 1;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .nav-item.active {
+            background: var(--primary-color);
+        }
+        
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .user-details {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .topbar {
+            background: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .topbar-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #003a6d;
+        }
+        
+        .content-area {
+            padding: 32px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stat-icon.blue { background: #dbeafe; color: #2563eb; }
+        .stat-icon.green { background: #dcfce7; color: #16a34a; }
+        .stat-icon.yellow { background: #fef3c7; color: #d97706; }
+        .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .stat-change {
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        
+        .stat-change.positive { color: #16a34a; }
+        .stat-change.negative { color: #dc2626; }
+        
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        /* Pending Tasks */
+        .task-list {
+            list-style: none;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .task-item:last-child {
+            border-bottom: none;
+        }
+        
+        .task-priority {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 16px;
+        }
+        
+        .task-priority.high { background: #ef4444; }
+        .task-priority.medium { background: #f59e0b; }
+        .task-priority.low { background: #10b981; }
+        
+        .task-info {
+            flex: 1;
+        }
+        
+        .task-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .task-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .task-action {
+            padding: 6px 12px;
+            background: var(--bg-color);
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .task-action:hover {
+            background: #e5e7eb;
+        }
+        
+        /* Activity */
+        .activity-list {
+            list-style: none;
+        }
+        
+        .activity-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+        }
+        
+        .activity-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            margin-top: 6px;
+        }
+        
+        .activity-text {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .activity-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-placeholder">HDFC BANK</span>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="03-loan-requests.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Loan Requests
+            </a>
+            <a href="07-opinion-editor.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Opinions
+            </a>
+            <a href="05-document-upload.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                Documents
+            </a>
+            <a href="10-reports.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                Reports
+            </a>
+            <a href="08-user-management.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                Users
+            </a>
+            <a href="09-tenant-settings.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Settings
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">JD</div>
+                <div class="user-details">
+                    <div class="user-name">John Doe</div>
+                    <div class="user-role">Panel Advocate</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="topbar">
+            <h1 class="page-title">Dashboard</h1>
+            <div class="topbar-actions">
+                <button class="btn btn-primary">+ New Request</button>
+            </div>
+        </header>
+        
+        <div class="content-area">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon blue">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">127</div>
+                    <div class="stat-label">Total Requests</div>
+                    <div class="stat-change positive">↑ 12% from last month</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon yellow">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">23</div>
+                    <div class="stat-label">Pending Review</div>
+                    <div class="stat-change negative">↑ 5 new today</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon green">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">89</div>
+                    <div class="stat-label">Completed</div>
+                    <div class="stat-change positive">↑ 8% from last month</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon purple">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">45</div>
+                    <div class="stat-label">AI-Assisted</div>
+                    <div class="stat-change positive">35% of total</div>
+                </div>
+            </div>
+            
+            <!-- Cards -->
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Pending Tasks</h2>
+                        <a href="#" style="color: var(--primary-color); font-size: 14px; text-decoration: none;">View All →</a>
+                    </div>
+                    <div class="card-body">
+                        <ul class="task-list">
+                            <li class="task-item">
+                                <span class="task-priority high"></span>
+                                <div class="task-info">
+                                    <div class="task-title">Review documents for REQ-2024-0127</div>
+                                    <div class="task-meta">Home Loan • HDFC001234 • Due in 2 days</div>
+                                </div>
+                                <a href="#" class="task-action">Review</a>
+                            </li>
+                            <li class="task-item">
+                                <span class="task-priority high"></span>
+                                <div class="task-info">
+                                    <div class="task-title">Complete opinion for REQ-2024-0125</div>
+                                    <div class="task-meta">LAP • HDFC001232 • Due tomorrow</div>
+                                </div>
+                                <a href="#" class="task-action">Continue</a>
+                            </li>
+                            <li class="task-item">
+                                <span class="task-priority medium"></span>
+                                <div class="task-info">
+                                    <div class="task-title">Approve opinion #OP-2024-089</div>
+                                    <div class="task-meta">Commercial Loan • Submitted by Adv. Singh</div>
+                                </div>
+                                <a href="#" class="task-action">Approve</a>
+                            </li>
+                            <li class="task-item">
+                                <span class="task-priority low"></span>
+                                <div class="task-info">
+                                    <div class="task-title">Upload pending documents for REQ-2024-0120</div>
+                                    <div class="task-meta">Home Loan • Awaiting EC</div>
+                                </div>
+                                <a href="#" class="task-action">Upload</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Recent Activity</h2>
+                    </div>
+                    <div class="card-body">
+                        <ul class="activity-list">
+                            <li class="activity-item">
+                                <span class="activity-dot"></span>
+                                <div>
+                                    <div class="activity-text">Opinion #OP-2024-088 was approved</div>
+                                    <div class="activity-time">2 hours ago</div>
+                                </div>
+                            </li>
+                            <li class="activity-item">
+                                <span class="activity-dot"></span>
+                                <div>
+                                    <div class="activity-text">New request REQ-2024-0127 assigned</div>
+                                    <div class="activity-time">3 hours ago</div>
+                                </div>
+                            </li>
+                            <li class="activity-item">
+                                <span class="activity-dot"></span>
+                                <div>
+                                    <div class="activity-text">AI extraction completed for 5 documents</div>
+                                    <div class="activity-time">5 hours ago</div>
+                                </div>
+                            </li>
+                            <li class="activity-item">
+                                <span class="activity-dot"></span>
+                                <div>
+                                    <div class="activity-text">Opinion draft generated by AI</div>
+                                    <div class="activity-time">Yesterday</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

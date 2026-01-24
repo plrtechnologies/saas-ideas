@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Request Detail - Legal Opinion Platform</title>
+    <style>
+        :root { --primary-color: #004C8F; --bg-color: #f3f4f6; --sidebar-bg: #1e293b; --card-bg: #ffffff; --text-primary: #1f2937; --text-secondary: #6b7280; --border-color: #e5e7eb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; flex-shrink: 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--primary-color); }
+        .nav-icon { width: 20px; height: 20px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary); }
+        .breadcrumb a { color: var(--primary-color); text-decoration: none; }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--text-primary); margin-top: 4px; }
+        .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        
+        .content-area { padding: 32px; flex: 1; overflow-y: auto; }
+        .detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+        
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .card-body { padding: 24px; }
+        
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .info-item { }
+        .info-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 4px; }
+        .info-value { font-size: 15px; color: var(--text-primary); font-weight: 500; }
+        
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-review { background: #dbeafe; color: #1e40af; }
+        .badge-high { background: #fee2e2; color: #991b1b; }
+        
+        .timeline { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        .timeline-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--text-primary); }
+        .timeline-item { display: flex; gap: 12px; margin-bottom: 16px; }
+        .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary-color); margin-top: 5px; flex-shrink: 0; }
+        .timeline-content { flex: 1; }
+        .timeline-text { font-size: 14px; color: var(--text-primary); }
+        .timeline-time { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        
+        .documents-list { list-style: none; }
+        .doc-item { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; }
+        .doc-icon { width: 40px; height: 40px; background: #fef3c7; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #d97706; }
+        .doc-info { flex: 1; }
+        .doc-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+        .doc-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        .doc-status { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+        .doc-status.extracted { background: #dcfce7; color: #166534; }
+        .doc-status.pending { background: #fef3c7; color: #92400e; }
+        .doc-actions { display: flex; gap: 8px; }
+        .doc-action { padding: 6px 10px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; background: var(--bg-color); color: var(--text-primary); }
+        
+        .ai-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color: white; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">HDFC BANK</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">Dashboard</a>
+            <a href="03-loan-requests.html" class="nav-item active">Loan Requests</a>
+            <a href="07-opinion-editor.html" class="nav-item">Opinions</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <div class="breadcrumb">
+                    <a href="03-loan-requests.html">Loan Requests</a>
+                    <span>›</span>
+                    <span>REQ-2024-0127</span>
+                </div>
+                <h1 class="page-title">REQ-2024-0127</h1>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline">Assign Lawyer</button>
+                <a href="07-opinion-editor.html" class="btn btn-success">Generate Opinion</a>
+            </div>
+        </header>
+        
+        <div class="content-area">
+            <div class="detail-grid">
+                <div>
+                    <!-- Request Info -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Request Information</h2>
+                            <span class="badge badge-review">In Review</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Reference Number</div>
+                                    <div class="info-value">REQ-2024-0127</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Loan Type</div>
+                                    <div class="info-value">Home Loan</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Loan Amount</div>
+                                    <div class="info-value">₹45,00,000</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Priority</div>
+                                    <div class="info-value"><span class="badge badge-high">High</span></div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Branch</div>
+                                    <div class="info-value">Bandra West - MH001</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Due Date</div>
+                                    <div class="info-value">January 26, 2026</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Borrower Info -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Borrower Details</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Name</div>
+                                    <div class="info-value">Rajesh Kumar</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Customer ID</div>
+                                    <div class="info-value">HDFC001234</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">PAN Number</div>
+                                    <div class="info-value">ABCPK1234A</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Phone</div>
+                                    <div class="info-value">+91 98765 43210</div>
+                                </div>
+                                <div class="info-item" style="grid-column: span 2;">
+                                    <div class="info-label">Property Address</div>
+                                    <div class="info-value">Flat 402, Sea View Apartments, 14th Road, Bandra West, Mumbai - 400050</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Documents -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Documents (6)</h2>
+                            <a href="05-document-upload.html" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">+ Upload</a>
+                        </div>
+                        <div class="card-body">
+                            <ul class="documents-list">
+                                <li class="doc-item">
+                                    <div class="doc-icon">📄</div>
+                                    <div class="doc-info">
+                                        <div class="doc-name">Sale_Deed_2024.pdf</div>
+                                        <div class="doc-meta">Property Document • 2.4 MB • Uploaded Jan 22</div>
+                                    </div>
+                                    <span class="doc-status extracted">✓ AI Extracted</span>
+                                    <div class="doc-actions">
+                                        <a href="06-document-viewer.html" class="doc-action">View</a>
+                                    </div>
+                                </li>
+                                <li class="doc-item">
+                                    <div class="doc-icon">📄</div>
+                                    <div class="doc-info">
+                                        <div class="doc-name">Title_Deed.pdf</div>
+                                        <div class="doc-meta">Property Document • 1.8 MB • Uploaded Jan 22</div>
+                                    </div>
+                                    <span class="doc-status extracted">✓ AI Extracted</span>
+                                    <div class="doc-actions">
+                                        <a href="06-document-viewer.html" class="doc-action">View</a>
+                                    </div>
+                                </li>
+                                <li class="doc-item">
+                                    <div class="doc-icon">📄</div>
+                                    <div class="doc-info">
+                                        <div class="doc-name">Encumbrance_Certificate.pdf</div>
+                                        <div class="doc-meta">Property Document • 856 KB • Uploaded Jan 22</div>
+                                    </div>
+                                    <span class="doc-status extracted">✓ AI Extracted</span>
+                                    <div class="doc-actions">
+                                        <a href="06-document-viewer.html" class="doc-action">View</a>
+                                    </div>
+                                </li>
+                                <li class="doc-item">
+                                    <div class="doc-icon">📄</div>
+                                    <div class="doc-info">
+                                        <div class="doc-name">Aadhaar_Card.pdf</div>
+                                        <div class="doc-meta">Identity Document • 245 KB • Uploaded Jan 22</div>
+                                    </div>
+                                    <span class="doc-status pending">Pending Review</span>
+                                    <div class="doc-actions">
+                                        <a href="06-document-viewer.html" class="doc-action">View</a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <!-- Status & Actions -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Quick Actions</h2>
+                        </div>
+                        <div class="card-body" style="display: flex; flex-direction: column; gap: 12px;">
+                            <a href="07-opinion-editor.html" class="btn btn-primary" style="text-align: center; text-decoration: none;">
+                                <span class="ai-badge" style="margin-right: 8px;">AI</span>
+                                Generate Draft Opinion
+                            </a>
+                            <button class="btn btn-outline">View Extracted Data</button>
+                            <button class="btn btn-outline">Request More Documents</button>
+                            <button class="btn btn-outline">Download All Documents</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Assignment -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Assignment</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-item" style="margin-bottom: 16px;">
+                                <div class="info-label">Assigned Lawyer</div>
+                                <div class="info-value">Adv. John Doe</div>
+                            </div>
+                            <div class="info-item" style="margin-bottom: 16px;">
+                                <div class="info-label">Created By</div>
+                                <div class="info-value">Bank Officer: Rahul Singh</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Created On</div>
+                                <div class="info-value">January 22, 2026</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Activity Timeline</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-text">AI completed document extraction</div>
+                                    <div class="timeline-time">Today, 10:30 AM</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-text">Assigned to Adv. John Doe</div>
+                                    <div class="timeline-time">Today, 09:15 AM</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-text">6 documents uploaded</div>
+                                    <div class="timeline-time">Jan 22, 2026, 03:45 PM</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-text">Request created by Rahul Singh</div>
+                                    <div class="timeline-time">Jan 22, 2026, 02:00 PM</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant Settings - Legal Opinion Platform</title>
+    <style>
+        :root { --primary-color: #004C8F; --bg-color: #f3f4f6; --sidebar-bg: #1e293b; --card-bg: #ffffff; --text-primary: #1f2937; --text-secondary: #6b7280; --border-color: #e5e7eb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--primary-color); }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .content-area { padding: 32px; flex: 1; overflow-y: auto; }
+        
+        .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        
+        .settings-layout { display: grid; grid-template-columns: 240px 1fr; gap: 32px; }
+        
+        .settings-nav { background: white; border-radius: 12px; padding: 8px; height: fit-content; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .settings-nav-item { display: block; padding: 12px 16px; border-radius: 8px; color: var(--text-secondary); text-decoration: none; font-size: 14px; margin-bottom: 4px; }
+        .settings-nav-item:hover { background: var(--bg-color); color: var(--text-primary); }
+        .settings-nav-item.active { background: var(--primary-color); color: white; }
+        
+        .settings-content { }
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; }
+        .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); }
+        .card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .card-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .card-body { padding: 24px; }
+        
+        .form-group { margin-bottom: 24px; }
+        .form-group:last-child { margin-bottom: 0; }
+        .form-label { display: block; font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 6px; }
+        .form-hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        .form-input, .form-select { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        /* Branding Section */
+        .logo-upload { display: flex; align-items: center; gap: 24px; }
+        .logo-preview { width: 180px; height: 60px; background: var(--bg-color); border: 2px dashed var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 13px; }
+        .logo-preview.has-logo { background: var(--primary-color); border-style: solid; color: white; font-weight: bold; font-size: 18px; }
+        .logo-actions { display: flex; flex-direction: column; gap: 8px; }
+        
+        .color-picker-group { display: flex; align-items: center; gap: 12px; }
+        .color-swatch { width: 48px; height: 48px; border-radius: 8px; border: 2px solid var(--border-color); cursor: pointer; }
+        .color-input { width: 120px; }
+        
+        .preview-section { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color); }
+        .preview-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; }
+        .preview-frame { background: var(--bg-color); border-radius: 8px; padding: 20px; }
+        .preview-header { background: var(--primary-color); color: white; padding: 16px 24px; border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 16px; }
+        .preview-header .logo { background: white; color: var(--primary-color); padding: 8px 16px; border-radius: 4px; font-weight: bold; }
+        .preview-content { background: white; padding: 24px; border-radius: 0 0 8px 8px; }
+        .preview-btn { padding: 10px 20px; border-radius: 6px; border: none; font-weight: 500; }
+        .preview-btn.primary { background: var(--primary-color); color: white; }
+        .preview-btn.secondary { background: #ED1C24; color: white; margin-left: 8px; }
+        
+        .card-footer { padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; }
+        
+        .toggle-group { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--border-color); }
+        .toggle-group:last-child { border-bottom: none; padding-bottom: 0; }
+        .toggle-info { }
+        .toggle-label { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+        .toggle-desc { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .toggle-switch { width: 48px; height: 26px; background: var(--border-color); border-radius: 13px; position: relative; cursor: pointer; }
+        .toggle-switch.active { background: var(--primary-color); }
+        .toggle-switch::after { content: ''; position: absolute; width: 22px; height: 22px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; }
+        .toggle-switch.active::after { left: 24px; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">HDFC BANK</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">Dashboard</a>
+            <a href="03-loan-requests.html" class="nav-item">Loan Requests</a>
+            <a href="08-user-management.html" class="nav-item">Users</a>
+            <a href="#" class="nav-item active">Settings</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <h1 class="page-title">Tenant Settings</h1>
+        </header>
+        
+        <div class="content-area">
+            <div class="settings-layout">
+                <nav class="settings-nav">
+                    <a href="#" class="settings-nav-item active">Branding</a>
+                    <a href="#" class="settings-nav-item">Organization</a>
+                    <a href="#" class="settings-nav-item">Workflow</a>
+                    <a href="#" class="settings-nav-item">Templates</a>
+                    <a href="#" class="settings-nav-item">Notifications</a>
+                    <a href="#" class="settings-nav-item">Security</a>
+                    <a href="#" class="settings-nav-item">Subscription</a>
+                </nav>
+                
+                <div class="settings-content">
+                    <!-- Branding Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Branding</h2>
+                            <p class="card-subtitle">Customize the appearance of your tenant's portal with your bank's branding</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Organization Logo</label>
+                                <div class="logo-upload">
+                                    <div class="logo-preview has-logo">HDFC BANK</div>
+                                    <div class="logo-actions">
+                                        <button class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">Upload New Logo</button>
+                                        <p class="form-hint">PNG, JPG up to 2MB. Recommended: 360x120px</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Favicon</label>
+                                <div class="logo-upload">
+                                    <div class="logo-preview" style="width: 48px; height: 48px;">🏦</div>
+                                    <div class="logo-actions">
+                                        <button class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">Upload Favicon</button>
+                                        <p class="form-hint">ICO, PNG 32x32px or 64x64px</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Primary Color</label>
+                                    <div class="color-picker-group">
+                                        <div class="color-swatch" style="background: #004C8F;"></div>
+                                        <input type="text" class="form-input color-input" value="#004C8F">
+                                    </div>
+                                    <p class="form-hint">Used for buttons, links, headers</p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Secondary Color</label>
+                                    <div class="color-picker-group">
+                                        <div class="color-swatch" style="background: #ED1C24;"></div>
+                                        <input type="text" class="form-input color-input" value="#ED1C24">
+                                    </div>
+                                    <p class="form-hint">Used for accents, alerts</p>
+                                </div>
+                            </div>
+                            
+                            <div class="preview-section">
+                                <h3 class="preview-title">Live Preview</h3>
+                                <div class="preview-frame">
+                                    <div class="preview-header" style="background: #004C8F;">
+                                        <span class="logo">HDFC BANK</span>
+                                        <span style="flex: 1;">Legal Opinion Platform</span>
+                                        <span>👤 Admin</span>
+                                    </div>
+                                    <div class="preview-content">
+                                        <p style="margin-bottom: 16px; color: var(--text-primary);">This is how your portal will look with the selected branding.</p>
+                                        <button class="preview-btn primary" style="background: #004C8F;">Primary Button</button>
+                                        <button class="preview-btn secondary" style="background: #ED1C24;">Secondary Button</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-outline">Reset to Default</button>
+                            <button class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Organization Info -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Organization Information</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Organization Name</label>
+                                    <input type="text" class="form-input" value="HDFC Bank Limited">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Tenant Code</label>
+                                    <input type="text" class="form-input" value="HDFC" disabled style="background: var(--bg-color);">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Contact Email</label>
+                                    <input type="email" class="form-input" value="legal@hdfc.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Contact Phone</label>
+                                    <input type="tel" class="form-input" value="+91 22 6160 6161">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Address</label>
+                                <input type="text" class="form-input" value="HDFC Bank House, Senapati Bapat Marg, Lower Parel, Mumbai - 400013">
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature Toggles -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Feature Settings</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <div class="toggle-label">AI-Powered Document Extraction</div>
+                                    <div class="toggle-desc">Automatically extract data from uploaded documents using OpenAI</div>
+                                </div>
+                                <div class="toggle-switch active"></div>
+                            </div>
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <div class="toggle-label">AI Opinion Draft Generation</div>
+                                    <div class="toggle-desc">Generate draft opinions using AI based on extracted data</div>
+                                </div>
+                                <div class="toggle-switch active"></div>
+                            </div>
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <div class="toggle-label">Two-Factor Authentication (MFA)</div>
+                                    <div class="toggle-desc">Require MFA for all users via Keycloak</div>
+                                </div>
+                                <div class="toggle-switch active"></div>
+                            </div>
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <div class="toggle-label">Email Notifications</div>
+                                    <div class="toggle-desc">Send email notifications for request updates</div>
+                                </div>
+                                <div class="toggle-switch active"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
