@@ -1,5 +1,5 @@
 # High-Level Design Document
-## Legal Opinion SaaS Platform for Bank Panel Advocates
+## Legal Opinion SaaS Platform for Law Firms
 
 **Version:** 2.0  
 **Date:** January 2026  
@@ -30,38 +30,39 @@
 
 ## 1. Executive Summary
 
-This document outlines the High-Level Design for a **Legal Opinion SaaS Platform** designed for panel advocates of banks in India. The platform enables lawyers to scrutinize loan application supporting documents (surety documents) and generate legally valid opinions on their authenticity and compliance.
+This document outlines the High-Level Design for a **Legal Opinion SaaS Platform** designed for law firms that serve as panel advocates for banks in India. The platform enables law firms to manage loan document scrutiny workflows and generate legally valid opinions on the authenticity and compliance of surety documents.
 
 ### Key Objectives
-- Provide a secure, multi-tenant SaaS platform for multiple banks
+- Provide a secure, multi-tenant SaaS platform for multiple **law firms**
 - Enable document upload, review, and legal opinion generation workflow
 - **AI-powered document extraction and opinion generation using OpenAI APIs**
 - Maintain audit trails and historical records for compliance
-- Ensure data isolation and security across bank tenants
+- Ensure data isolation and security across **law firm tenants**
 - **Portable architecture**: Run on VM during development, scale on Kubernetes in production
-- **Tenant-configurable UI** with custom branding (logos, colors) per bank
+- **Tenant-configurable UI** with custom branding (logos, colors) per **law firm**
 
 ---
 
 ## 2. Business Context
 
 ### 2.1 Problem Statement
-Banks in India engage panel advocates to verify loan application documents and provide legal opinions on the validity of surety/collateral documents. Currently, this process is:
+Law firms that serve as panel advocates for banks need to verify loan application documents and provide legal opinions on the validity of surety/collateral documents. Currently, this process is:
 - Manual and paper-heavy
-- Lacks standardization across advocates
-- Difficult to track and audit
-- Time-consuming with poor visibility
+- Lacks standardization across different bank clients
+- Difficult to track and audit across multiple banks
+- Time-consuming with poor visibility for both law firms and their bank clients
 
 ### 2.2 Solution Overview
-A SaaS platform that:
+A SaaS platform for **law firms** that:
 - Digitizes the document submission and review process
 - **AI-powered document content extraction** using OCR and OpenAI GPT models
 - **LLM-assisted opinion generation** using extracted data and templates
 - Standardizes opinion generation with configurable templates
 - Provides real-time tracking and dashboards
 - Maintains complete audit trails
-- Enables multi-bank (tenant) operations with data isolation
-- **Supports white-labeling** with tenant-specific branding
+- Enables **multi-law firm (tenant)** operations with data isolation
+- Allows law firms to manage **multiple bank clients** within their tenant
+- **Supports white-labeling** with law firm-specific branding
 
 ### 2.3 AI/LLM Integration Overview
 The platform leverages **OpenAI APIs** for:
@@ -91,12 +92,39 @@ The platform leverages **OpenAI APIs** for:
 ### 2.4 Key Stakeholders
 | Stakeholder | Role |
 |-------------|------|
-| Bank Officers | Initiate legal opinion requests, upload documents |
-| Panel Advocates | Review documents, generate legal opinions |
-| Bank Admin | Manage users, view reports, configure workflows |
-| Super Admin | Platform administration, tenant onboarding |
+| Law Firm Admin | Manage users, bank clients, view reports, configure workflows |
+| Senior Advocate | Review and approve opinions, assign cases to advocates |
+| Panel Advocate | Review documents, generate legal opinions |
+| Paralegal/Clerk | Upload documents, assist with data entry |
+| Super Admin | Platform administration, law firm tenant onboarding |
 
-### 2.5 Document Types Handled
+### 2.5 Tenant vs Client Model
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        TENANT (Law Firm) vs CLIENT (Bank)                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   TENANT = Law Firm                     CLIENTS = Banks                     │
+│   ┌─────────────────────────┐          ┌─────────────────────────┐         │
+│   │  Sharma & Associates    │          │  Bank Clients:          │         │
+│   │  (Law Firm Tenant)      │          │  • HDFC Bank            │         │
+│   │                         │◄─────────│  • ICICI Bank           │         │
+│   │  • Has own branding     │  serves  │  • SBI                  │         │
+│   │  • Own users/advocates  │          │  • Axis Bank            │         │
+│   │  • Pays for SaaS        │          │                         │         │
+│   │  • Isolated data        │          │  (Each is a "client"    │         │
+│   └─────────────────────────┘          │   within the tenant)    │         │
+│                                         └─────────────────────────┘         │
+│                                                                              │
+│   Data Model:                                                               │
+│   • tenant_id = Law Firm ID (data isolation)                               │
+│   • client_id = Bank ID (filter within tenant)                             │
+│   • Loan requests tagged with both tenant_id AND client_id (bank)          │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2.6 Document Types Handled
 - Property Documents (Sale Deed, Title Deed, Encumbrance Certificate)
 - Identity Documents (Aadhaar, PAN, Voter ID)
 - Financial Documents (Bank Statements, ITR, Balance Sheets)
@@ -130,9 +158,10 @@ The platform leverages **OpenAI APIs** for:
 ### 3.2 User Journey
 
 ```
-Bank Officer                    Panel Advocate                    System
+Law Firm Clerk/Paralegal          Panel Advocate                    System
      │                               │                              │
-     │  1. Create Opinion Request    │                              │
+     │  1. Create Request for        │                              │
+     │     Bank Client (e.g., HDFC)  │                              │
      │──────────────────────────────────────────────────────────────>│
      │                               │                              │
      │  2. Upload Documents          │                              │
@@ -150,7 +179,8 @@ Bank Officer                    Panel Advocate                    System
      │                               │  6. Edit & Submit Opinion    │
      │                               │─────────────────────────────>│
      │                               │                              │
-     │  7. Opinion Delivered         │                              │
+     │  7. Opinion Ready for         │                              │
+     │     Bank Client               │                              │
      │<─────────────────────────────────────────────────────────────│
      │                               │                              │
 ```
@@ -343,19 +373,19 @@ Bank Officer                    Panel Advocate                    System
 │  │                 TENANT BRANDING LAYER                       │ │
 │  │                                                             │ │
 │  │  On app load:                                               │ │
-│  │  1. Extract tenant from subdomain (hdfc.legalopinion.com)  │ │
-│  │  2. OR from URL param (?tenant=hdfc)                       │ │
+│  │  1. Extract tenant from subdomain (sharma.legalopinion.com)│ │
+│  │  2. OR from URL param (?tenant=sharma)                     │ │
 │  │  3. Fetch tenant config from API: GET /api/tenants/config  │ │
 │  │  4. Apply branding: logo, primary color, favicon           │ │
 │  │                                                             │ │
-│  │  Tenant Config Response:                                    │ │
+│  │  Tenant Config Response (Law Firm):                        │ │
 │  │  {                                                          │ │
 │  │    "tenant_id": "uuid",                                    │ │
-│  │    "name": "HDFC Bank",                                    │ │
-│  │    "logo_url": "https://s3.../hdfc/logo.png",             │ │
-│  │    "favicon_url": "https://s3.../hdfc/favicon.ico",       │ │
-│  │    "primary_color": "#004C8F",                             │ │
-│  │    "secondary_color": "#ED1C24"                            │ │
+│  │    "name": "Sharma & Associates",                          │ │
+│  │    "logo_url": "https://s3.../sharma/logo.png",           │ │
+│  │    "favicon_url": "https://s3.../sharma/favicon.ico",     │ │
+│  │    "primary_color": "#1a365d",                             │ │
+│  │    "secondary_color": "#c9a227"                            │ │
 │  │  }                                                          │ │
 │  │                                                             │ │
 │  └────────────────────────────────────────────────────────────┘ │
@@ -504,22 +534,29 @@ REQUEST FLOW WITH TENANT RESOLUTION
 
 **Approach: Shared Database, Shared Schema with tenant_id Column**
 
+**Key Concept: Law Firms are Tenants, Banks are Clients within a Tenant**
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                       MULTI-TENANCY ARCHITECTURE                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│   UI LAYER (Per-Tenant Branding)                                            │
+│   UI LAYER (Per-Tenant Branding - Law Firm)                                 │
 │   ┌────────────────────────────────────────────────────────────────────────┐│
 │   │                                                                         ││
-│   │   Bank A (hdfc.app.com)      Bank B (icici.app.com)                   ││
-│   │   ┌─────────────────────┐    ┌─────────────────────┐                  ││
-│   │   │ [HDFC LOGO]         │    │ [ICICI LOGO]        │                  ││
-│   │   │ Primary: #004C8F    │    │ Primary: #F58220    │                  ││
-│   │   │ Secondary: #ED1C24  │    │ Secondary: #003366  │                  ││
-│   │   └─────────────────────┘    └─────────────────────┘                  ││
+│   │   Law Firm A (sharma.app.com)    Law Firm B (kapoor.app.com)          ││
+│   │   ┌─────────────────────┐        ┌─────────────────────┐              ││
+│   │   │ [SHARMA & ASSOC]    │        │ [KAPOOR LAW FIRM]   │              ││
+│   │   │ Primary: #1a365d    │        │ Primary: #2d3748    │              ││
+│   │   │ Secondary: #c9a227  │        │ Secondary: #38a169  │              ││
+│   │   │                     │        │                     │              ││
+│   │   │ Bank Clients:       │        │ Bank Clients:       │              ││
+│   │   │ • HDFC Bank         │        │ • SBI               │              ││
+│   │   │ • ICICI Bank        │        │ • Axis Bank         │              ││
+│   │   │ • Axis Bank         │        │ • Kotak Bank        │              ││
+│   │   └─────────────────────┘        └─────────────────────┘              ││
 │   │                                                                         ││
-│   │   Same React codebase - different branding loaded at runtime           ││
+│   │   Same React codebase - law firm branding loaded at runtime            ││
 │   │                                                                         ││
 │   └────────────────────────────────────────────────────────────────────────┘│
 │                                      │                                       │
@@ -535,34 +572,37 @@ REQUEST FLOW WITH TENANT RESOLUTION
 │   │   │   JWT Payload:                                                 │   ││
 │   │   │   {                                                            │   ││
 │   │   │     "sub": "user-uuid",                                       │   ││
-│   │   │     "tenant_id": "hdfc-tenant-uuid",  ← Extracted             │   ││
+│   │   │     "tenant_id": "sharma-tenant-uuid",  ← Law Firm ID         │   ││
 │   │   │     "roles": ["panel_advocate"],                              │   ││
-│   │   │     "email": "lawyer@hdfc.com"                                │   ││
+│   │   │     "email": "lawyer@sharmalaw.com"                           │   ││
 │   │   │   }                                                            │   ││
 │   │   │                                                                │   ││
 │   │   │   All queries: WHERE tenant_id = :tenant_id                   │   ││
+│   │   │   Bank filter: AND client_id = :client_id (optional)          │   ││
 │   │   │                                                                │   ││
 │   │   └───────────────────────────────────────────────────────────────┘   ││
 │   │                                                                         ││
 │   └────────────────────────────────────────────────────────────────────────┘│
 │                                      │                                       │
 │                                      ▼                                       │
-│   DATA LAYER (Shared DB, Tenant Column)                                     │
+│   DATA LAYER (Shared DB, Tenant Column + Client Column)                     │
 │   ┌────────────────────────────────────────────────────────────────────────┐│
 │   │                                                                         ││
 │   │   PostgreSQL Database                                                  ││
 │   │   ┌───────────────────────────────────────────────────────────────┐   ││
 │   │   │                                                                │   ││
-│   │   │   users table                                                  │   ││
-│   │   │   ┌──────────┬──────────┬──────────┬──────────┐              │   ││
-│   │   │   │tenant_id │ id       │ email    │ name     │              │   ││
-│   │   │   ├──────────┼──────────┼──────────┼──────────┤              │   ││
-│   │   │   │ HDFC-uuid│ u001     │ a@hdfc   │ John     │              │   ││
-│   │   │   │ ICICI-uuid│u002     │ b@icici  │ Jane     │              │   ││
-│   │   │   └──────────┴──────────┴──────────┴──────────┘              │   ││
+│   │   │   loan_requests table                                          │   ││
+│   │   │   ┌──────────┬──────────┬──────────┬──────────┬─────────┐    │   ││
+│   │   │   │tenant_id │client_id │ id       │borrower  │ status  │    │   ││
+│   │   │   │(Law Firm)│ (Bank)   │          │          │         │    │   ││
+│   │   │   ├──────────┼──────────┼──────────┼──────────┼─────────┤    │   ││
+│   │   │   │sharma-id │ hdfc-id  │ req001   │ Rajesh   │ pending │    │   ││
+│   │   │   │sharma-id │ icici-id │ req002   │ Priya    │ review  │    │   ││
+│   │   │   │kapoor-id │ sbi-id   │ req003   │ Amit     │ complete│    │   ││
+│   │   │   └──────────┴──────────┴──────────┴──────────┴─────────┘    │   ││
 │   │   │                                                                │   ││
 │   │   │   Row Level Security (RLS):                                   │   ││
-│   │   │   CREATE POLICY tenant_isolation ON users                     │   ││
+│   │   │   CREATE POLICY tenant_isolation ON loan_requests             │   ││
 │   │   │     USING (tenant_id = current_setting('app.current_tenant')) │   ││
 │   │   │                                                                │   ││
 │   │   └───────────────────────────────────────────────────────────────┘   ││
@@ -571,13 +611,13 @@ REQUEST FLOW WITH TENANT RESOLUTION
 │   │   ┌───────────────────────────────────────────────────────────────┐   ││
 │   │   │                                                                │   ││
 │   │   │   legal-opinion-docs/                                         │   ││
-│   │   │   ├── {hdfc-tenant-uuid}/                                     │   ││
+│   │   │   ├── {sharma-tenant-uuid}/     ← Law Firm folder            │   ││
 │   │   │   │   ├── documents/                                          │   ││
 │   │   │   │   ├── opinions/                                           │   ││
-│   │   │   │   └── branding/                                           │   ││
+│   │   │   │   └── branding/             ← Law firm logo/favicon      │   ││
 │   │   │   │       ├── logo.png                                        │   ││
 │   │   │   │       └── favicon.ico                                     │   ││
-│   │   │   ├── {icici-tenant-uuid}/                                    │   ││
+│   │   │   ├── {kapoor-tenant-uuid}/                                   │   ││
 │   │   │   │   ├── documents/                                          │   ││
 │   │   │   │   ├── opinions/                                           │   ││
 │   │   │   │   └── branding/                                           │   ││
@@ -590,13 +630,13 @@ REQUEST FLOW WITH TENANT RESOLUTION
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 7.2 Tenant Configuration Table
+### 7.2 Tenant Configuration Table (Law Firms)
 
 ```sql
 CREATE TABLE tenants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code VARCHAR(50) UNIQUE NOT NULL,        -- 'HDFC', 'ICICI'
-    name VARCHAR(255) NOT NULL,              -- 'HDFC Bank'
+    code VARCHAR(50) UNIQUE NOT NULL,        -- 'SHARMA', 'KAPOOR'
+    name VARCHAR(255) NOT NULL,              -- 'Sharma & Associates'
     
     -- Branding Configuration
     logo_url VARCHAR(500),                   -- S3 URL
@@ -625,13 +665,34 @@ CREATE TABLE tenants (
 );
 ```
 
-### 7.3 Tenant Branding API
+### 7.3 Bank Clients Table (within Tenant)
+
+```sql
+-- Bank Clients (managed by Law Firm tenant)
+CREATE TABLE bank_clients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id),  -- Law Firm
+    code VARCHAR(50) NOT NULL,             -- 'HDFC', 'ICICI'
+    name VARCHAR(255) NOT NULL,            -- 'HDFC Bank'
+    branch VARCHAR(255),                   -- 'Bandra West Branch'
+    contact_name VARCHAR(255),             -- Bank contact person
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(20),
+    address TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, code)
+);
+```
+
+### 7.4 Tenant Branding API (Law Firm)
 
 ```yaml
 # API Endpoints for Tenant Configuration
 
-# Public - Get tenant config by subdomain/code (no auth required)
-GET /api/v1/tenants/config?code=hdfc
+# Public - Get law firm tenant config by subdomain/code (no auth required)
+GET /api/v1/tenants/config?code=sharma
 Response:
 {
   "tenant_id": "uuid",
@@ -949,10 +1010,28 @@ CREATE TABLE users (
     UNIQUE(tenant_id, email)
 );
 
+-- Bank Clients Table (Banks served by the Law Firm)
+CREATE TABLE bank_clients (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id),  -- Law Firm
+    code VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    branch VARCHAR(255),
+    contact_name VARCHAR(255),
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(20),
+    address TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, code)
+);
+
 -- Loan Requests Table
 CREATE TABLE loan_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id),
+    tenant_id UUID NOT NULL REFERENCES tenants(id),    -- Law Firm
+    client_id UUID NOT NULL REFERENCES bank_clients(id), -- Bank Client
     reference_number VARCHAR(50) NOT NULL,
     borrower_id UUID NOT NULL REFERENCES borrowers(id),
     loan_type VARCHAR(50) NOT NULL,
