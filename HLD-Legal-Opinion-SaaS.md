@@ -1433,7 +1433,7 @@ The following UI screens are required for the application. Mock HTML files and s
 
 Tenant-branded login page with Keycloak SSO integration. Branding (logo, colors) loaded from tenant config.
 
-![Login Page](ui-mockups/01-login.png)
+![Login Page](ui-mockups/01-login.png?v=2)
 
 ---
 
@@ -1442,7 +1442,7 @@ Tenant-branded login page with Keycloak SSO integration. Branding (logo, colors)
 
 Overview with key metrics, pending tasks, and recent activity.
 
-![Dashboard](ui-mockups/02-dashboard.png)
+![Dashboard](ui-mockups/02-dashboard.png?v=2)
 
 ---
 
@@ -1451,7 +1451,7 @@ Overview with key metrics, pending tasks, and recent activity.
 
 List of all loan requests with search, filters (status, loan type, priority), and pagination.
 
-![Loan Requests List](ui-mockups/03-loan-requests.png)
+![Loan Requests List](ui-mockups/03-loan-requests.png?v=2)
 
 ---
 
@@ -1460,7 +1460,7 @@ List of all loan requests with search, filters (status, loan type, priority), an
 
 Single request view with borrower details, documents list, quick actions, and activity timeline.
 
-![Loan Request Detail](ui-mockups/04-loan-request-detail.png)
+![Loan Request Detail](ui-mockups/04-loan-request-detail.png?v=2)
 
 ---
 
@@ -1469,7 +1469,7 @@ Single request view with borrower details, documents list, quick actions, and ac
 
 Drag-drop document upload with category selection and AI processing status.
 
-![Document Upload](ui-mockups/05-document-upload.png)
+![Document Upload](ui-mockups/05-document-upload.png?v=2)
 
 ---
 
@@ -1478,7 +1478,7 @@ Drag-drop document upload with category selection and AI processing status.
 
 View document with AI-extracted data panel showing property details, party information, and confidence scores.
 
-![Document Viewer](ui-mockups/06-document-viewer.png)
+![Document Viewer](ui-mockups/06-document-viewer.png?v=2)
 
 ---
 
@@ -1487,7 +1487,7 @@ View document with AI-extracted data panel showing property details, party infor
 
 Create/edit legal opinion with AI assistance. Features document summary, rich text editor, and AI suggestions.
 
-![Opinion Editor](ui-mockups/07-opinion-editor.png)
+![Opinion Editor](ui-mockups/07-opinion-editor.png?v=2)
 
 ---
 
@@ -1496,7 +1496,7 @@ Create/edit legal opinion with AI assistance. Features document summary, rich te
 
 Admin screen for user CRUD operations with role management.
 
-![User Management](ui-mockups/08-user-management.png)
+![User Management](ui-mockups/08-user-management.png?v=2)
 
 ---
 
@@ -1505,7 +1505,7 @@ Admin screen for user CRUD operations with role management.
 
 Admin screen for tenant branding (logo, colors), organization info, and feature settings.
 
-![Tenant Settings](ui-mockups/09-tenant-settings.png)
+![Tenant Settings](ui-mockups/09-tenant-settings.png?v=2)
 
 ---
 
@@ -1514,7 +1514,7 @@ Admin screen for tenant branding (logo, colors), organization info, and feature 
 
 Analytics dashboard with charts, recent opinions table, and activity feed.
 
-![Reports & Analytics](ui-mockups/10-reports.png)
+![Reports & Analytics](ui-mockups/10-reports.png?v=2)
 
 ---
 
