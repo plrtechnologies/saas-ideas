@@ -320,6 +320,14 @@ Body: {
 
 ![Authentication Flow with Keycloak](ui-mockups/arch-05-auth-flow.png?v=5)
 
+**Identity Brokering Support:** Keycloak can act as an identity broker, allowing law firms to use their existing identity providers (IdPs) for authentication. This enables:
+- **SSO Integration** - Law firms can connect their Azure AD, Okta, Google Workspace, or other enterprise IdPs
+- **Federation** - Users authenticate with their law firm's IdP, and Keycloak issues JWT tokens for the SaaS app
+- **Protocol Support** - Supports SAML 2.0, OpenID Connect (OIDC), and LDAP/Active Directory
+- **Seamless Experience** - Your SaaS app continues to validate Keycloak JWT tokens (same flow), while users authenticate via their firm's IdP
+
+This allows law firms to maintain centralized user management in their existing systems while accessing the SaaS platform.
+
 ### 8.2 JWT Token Structure
 
 ```json
@@ -351,6 +359,8 @@ Body: {
 ### 8.3 Authentication Flows
 
 The authentication flow uses OAuth 2.0 with PKCE for the frontend SPA. See the visual diagram above for the complete flow.
+
+**Note:** When a law firm has configured identity brokering with their IdP (e.g., Azure AD, Okta), the flow extends to: User → Law Firm IdP → Keycloak (broker) → SaaS App. Keycloak still issues the JWT token, ensuring your app's authentication logic remains unchanged.
 
 ### 8.4 Keycloak Integration Libraries
 
@@ -808,7 +818,122 @@ CREATE POLICY tenant_isolation ON legal_opinions
 
 ![LLM Integration Architecture](ui-mockups/arch-03-llm-integration.png?v=5)
 
-### 10.2 AI Service Implementation
+### 10.2 AI Workflow: Automated vs Manual Steps
+
+**Key Question: Are opinions generated automatically?**
+
+**Answer:** The workflow uses a **human-in-the-loop** approach with selective automation:
+
+#### Automated Steps (Triggered on Document Upload)
+
+1. **Document Upload** → User uploads documents for an opinion request
+2. **OCR Processing** → Automatic text extraction from PDFs/images (Tesseract/Textract)
+3. **AI Data Extraction** → Automatic structured data extraction using LLM:
+   - Property address, survey number
+   - Party names (buyer, seller, mortgagor)
+   - Registration dates, document numbers
+   - Property area, valuation
+   - Encumbrances, if any
+4. **Data Storage** → Extracted data saved to database with confidence scores
+
+#### Optional: Auto-Generate Draft Opinion (Configurable)
+
+**Option A: Manual Trigger (Default)**
+- Lawyer clicks "Generate Draft Opinion" button in Opinion Editor
+- AI generates draft opinion using extracted data + template
+- Lawyer reviews, edits, and submits
+
+**Option B: Automatic Draft Generation (Configurable per Tenant)**
+- After all documents are uploaded and extraction is complete
+- System automatically triggers opinion draft generation
+- Draft opinion saved with `status: 'DRAFT'` and `ai_generated: true`
+- Lawyer receives notification to review the draft
+- Lawyer opens Opinion Editor, reviews AI-generated content, edits as needed, and submits
+
+#### Always Manual: Review & Approval
+
+- **Lawyer Review** → Always required (human-in-the-loop)
+- **Edit & Refine** → Lawyer can modify AI-generated content
+- **Final Approval** → Lawyer must explicitly submit/approve the opinion
+- **Digital Signature** → Lawyer signs the final opinion
+
+#### Complete Workflow Example
+
+```
+1. Paralegal creates opinion request for Bank Client (HDFC)
+   └─ Status: PENDING
+
+2. Paralegal uploads documents (Title Deed, Sale Agreement, etc.)
+   └─ Status: DOCUMENTS_UPLOADED
+   
+3. [AUTOMATIC] System processes documents:
+   ├─ OCR extracts text from images/PDFs
+   ├─ LLM extracts structured data (property, parties, dates)
+   └─ Extracted data saved with confidence scores
+   └─ Status: EXTRACTION_COMPLETE
+
+4. [AUTOMATIC or MANUAL] Opinion Draft Generation:
+   ├─ If auto-generate enabled: System generates draft opinion
+   ├─ If manual: Lawyer clicks "Generate Draft" button
+   └─ AI creates opinion using extracted data + legal template
+   └─ Status: DRAFT (ai_generated: true)
+
+5. [MANUAL] Lawyer receives notification/assignment
+   └─ Opens Opinion Editor
+
+6. [MANUAL] Lawyer reviews:
+   ├─ Reviews extracted data (can verify/correct)
+   ├─ Reviews AI-generated opinion draft
+   ├─ Edits content as needed
+   └─ Adds any additional legal analysis
+
+7. [MANUAL] Lawyer submits final opinion
+   └─ Status: COMPLETED
+   └─ ai_generated: true, but lawyer_reviewed: true, lawyer_approved: true
+
+8. [AUTOMATIC] System notifies bank client
+   └─ Opinion ready for download
+```
+
+#### Configuration Options
+
+**Tenant Settings (per Law Firm):**
+```json
+{
+  "ai_settings": {
+    "auto_extract_on_upload": true,        // Always automatic
+    "auto_generate_opinion_draft": false,  // Default: manual trigger
+    "require_lawyer_review": true,         // Always required
+    "min_confidence_score": 0.85          // Threshold for auto-extraction
+  }
+}
+```
+
+#### Benefits of Human-in-the-Loop
+
+1. **Legal Accuracy** - Lawyer ensures correctness before submission
+2. **Compliance** - Final opinion is lawyer-approved, not AI-only
+3. **Flexibility** - Lawyer can override AI suggestions
+4. **Quality Control** - Human review catches edge cases
+5. **Liability** - Lawyer takes responsibility for final opinion
+
+#### API Endpoints
+
+```typescript
+// Automatic extraction (triggered on document upload)
+POST /api/v1/documents/{id}/extract
+→ Returns: ExtractionResult with structured data
+
+// Manual opinion draft generation
+POST /api/v1/opinions/{id}/generate-draft
+→ Returns: OpinionDraft (AI-generated content)
+
+// Lawyer review and submission
+PUT /api/v1/opinions/{id}
+Body: { content: "...", lawyer_reviewed: true, status: "COMPLETED" }
+```
+
+### 10.3 AI Service Implementation
 
 ```typescript
 // ai.service.ts
@@ -1013,6 +1138,12 @@ List of all loan requests with search, filters (status, loan type, priority), an
 
 Single request view with borrower details, documents list, quick actions, and activity timeline.
 
+**AI Workflow Alignment:**
+- Shows document extraction status (✓ AI Extracted / Pending Review)
+- Displays "Generate Draft Opinion" button (manual trigger for AI draft generation)
+- Activity timeline shows AI extraction completion events
+- Quick action to view extracted data
+
 ![Opinion Request Detail](ui-mockups/04-opinion-request-detail.png?v=5)
 
 ---
@@ -1021,6 +1152,12 @@ Single request view with borrower details, documents list, quick actions, and ac
 **File:** [ui-mockups/05-document-upload.html](ui-mockups/05-document-upload.html)
 
 Drag-drop document upload with category selection and AI processing status.
+
+**AI Workflow Alignment:**
+- Shows real-time AI processing status (🤖 AI Processing... / ✓ Ready)
+- Displays notification that documents will be automatically processed by AI
+- File list shows extraction status per document
+- Aligned with **Step 2-3** of AI workflow (Upload → Automatic OCR + Extraction)
 
 ![Document Upload](ui-mockups/05-document-upload.png?v=5)
 
@@ -1031,6 +1168,12 @@ Drag-drop document upload with category selection and AI processing status.
 
 View document with AI-extracted data panel showing property details, party information, and confidence scores.
 
+**AI Workflow Alignment:**
+- Displays extracted structured data (property, parties, dates, amounts)
+- Shows confidence scores for extracted fields
+- Allows lawyer to verify/correct extracted data
+- Aligned with **Step 3** of AI workflow (Review Extracted Data)
+
 ![Document Viewer](ui-mockups/06-document-viewer.png?v=5)
 
 ---
@@ -1039,6 +1182,16 @@ View document with AI-extracted data panel showing property details, party infor
 **File:** [ui-mockups/07-opinion-editor.html](ui-mockups/07-opinion-editor.html)
 
 Create/edit legal opinion with AI assistance. Features document summary, rich text editor, and AI suggestions.
+
+**AI Workflow Alignment:**
+- **"🤖 AI Generate" button** - Manual trigger for draft opinion generation (Option A workflow)
+- **AI-generated content sections** - Highlighted sections showing AI-generated text
+- **AI Assistant panel** - Provides suggestions, missing information alerts, and prompt-based generation
+- **"Generate full draft" quick action** - Alternative way to trigger complete draft generation
+- **Document summary panel** - Shows extracted data for reference while editing
+- Aligned with **Step 4-6** of AI workflow (Generate Draft → Review → Edit → Submit)
+
+**Note:** If auto-generate is enabled (Option B), the draft would be pre-populated when lawyer opens this screen.
 
 ![Opinion Editor](ui-mockups/07-opinion-editor.png?v=5)
 
@@ -1082,73 +1235,582 @@ New Request → Document Upload → AI Extraction → Review
 **Admin Flow:**
 Dashboard → User Management / Tenant Settings / Reports
 
+### 12.3 AI Workflow Screen Mapping
+
+The UI screens are aligned with the AI workflow described in [Section 10.2](#102-ai-workflow-automated-vs-manual-steps):
+
+| Workflow Step | Screen | UI Features |
+|---------------|--------|-------------|
+| **1. Create Request** | Opinion Requests List → Create New | Create opinion request for bank client |
+| **2. Upload Documents** | Document Upload | Drag-drop upload, shows "AI Processing..." status |
+| **3. Automatic Extraction** | Document Upload / Opinion Request Detail | Status indicators: "🤖 AI Processing..." → "✓ AI Extracted" |
+| **4. Review Extracted Data** | Document Viewer | Shows extracted data panel with confidence scores |
+| **5. Generate Draft (Manual)** | Opinion Editor | "🤖 AI Generate" button triggers draft generation |
+| **5. Generate Draft (Auto)** | Opinion Editor | Draft pre-populated if auto-generate enabled |
+| **6. Review & Edit** | Opinion Editor | AI-generated content highlighted, lawyer can edit |
+| **7. Submit Opinion** | Opinion Editor | "Submit" button, requires lawyer approval |
+
+**Key UI Elements Supporting AI Workflow:**
+- ✅ Document status badges (Extracted/Pending) in Opinion Request Detail
+- ✅ AI processing indicators in Document Upload screen
+- ✅ Extracted data display in Document Viewer
+- ✅ "Generate Draft Opinion" button in Opinion Request Detail
+- ✅ "AI Generate" button in Opinion Editor toolbar
+- ✅ AI-generated content highlighting in Opinion Editor
+- ✅ AI Assistant panel with suggestions in Opinion Editor
+- ✅ Activity timeline showing AI extraction events
+
 ---
 
 ## 13. CI/CD Pipeline
 
-### 13.1 GitHub Actions Workflow
+### 13.1 Repository Structure
+
+The application uses **two separate repositories** with independent CI/CD pipelines:
+
+1. **`legal-ops-ui`** - Frontend React application
+2. **`legal-ops-api`** - Backend API (NestJS/FastAPI)
+
+Each repository has its own GitHub Actions workflows with similar logic but repository-specific configurations.
+
+### 13.2 Pipeline Overview
+
+Both repositories follow the same pipeline structure:
+
+**Pipeline 1: PR Validation (dev branch)**
+- Triggered on: Pull Request to `dev` branch
+- Steps: Lint → SonarQube → Unit Tests
+- Outcome: Merge to `dev` branch if all checks pass
+
+**Pipeline 2: Dev Deployment**
+- Triggered on: Merge to `dev` branch
+- Steps: Build → Docker Image → Push to Registry → Deploy to Dev Environment
+
+**Pipeline 3: Test Deployment**
+- Triggered on: Merge from `dev` to `main` branch
+- Steps: Build → Docker Image (Semantic Versioning) → Push to Registry → Deploy to Test Environment
+
+### 13.3 Frontend Pipeline (legal-ops-ui)
+
+#### 13.3.1 PR Validation Workflow
 
 ```yaml
-# .github/workflows/ci-cd.yml
-name: CI/CD Pipeline
+# .github/workflows/pr-validation.yml
+name: PR Validation - UI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [dev]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  test:
+  lint:
+    name: Lint Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Backend Tests
-        run: |
-          cd backend
-          npm ci
-          npm run test
-      - name: Run Frontend Tests
-        run: |
-          cd frontend
-          npm ci
-          npm run test
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
       
-  build:
-    needs: test
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run Linter
+        run: npm run lint
+        # TBD: Configure ESLint rules and fix mode
+      
+  sonarqube:
+    name: SonarQube Analysis
     runs-on: ubuntu-latest
     steps:
-      - name: Build Docker Images
-        run: |
-          docker build -t backend:${{ github.sha }} ./backend
-          docker build -t frontend:${{ github.sha }} ./frontend
-      - name: Push to ECR
-        run: |
-          aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REGISTRY
-          docker push $ECR_REGISTRY/backend:${{ github.sha }}
-          docker push $ECR_REGISTRY/frontend:${{ github.sha }}
-        
-  deploy-dev:
-    needs: build
-    if: github.ref == 'refs/heads/develop'
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run SonarQube
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        # TBD: Configure SonarQube project key and quality gates
+      
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Dev
-        run: |
-          kubectl set image deployment/backend backend=$ECR_REGISTRY/backend:${{ github.sha }}
-          kubectl set image deployment/frontend frontend=$ECR_REGISTRY/frontend:${{ github.sha }}
-        
-  deploy-prod:
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Deploy to Production
-        run: |
-          kubectl set image deployment/backend backend=$ECR_REGISTRY/backend:${{ github.sha }}
-          kubectl set image deployment/frontend frontend=$ECR_REGISTRY/frontend:${{ github.sha }}
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run Unit Tests
+        run: npm run test:unit
+        # TBD: Configure test coverage thresholds
+      
+      - name: Upload Coverage Reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          # TBD: Configure codecov token
 ```
+
+#### 13.3.2 Dev Deployment Workflow
+
+```yaml
+# .github/workflows/deploy-dev.yml
+name: Deploy to Dev - UI
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Build Application
+        run: npm run build
+        env:
+          REACT_APP_API_URL: ${{ secrets.DEV_API_URL }}
+          REACT_APP_KEYCLOAK_URL: ${{ secrets.DEV_KEYCLOAK_URL }}
+        # TBD: Configure all environment variables
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build Docker Image
+        run: |
+          docker build -t legal-ops-ui:dev-${{ github.sha }} .
+          docker tag legal-ops-ui:dev-${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:dev-${{ github.sha }}
+          docker tag legal-ops-ui:dev-${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:dev-latest
+        # TBD: Configure Dockerfile path and build args
+      
+      - name: Push Docker Image to ECR
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:dev-${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:dev-latest
+      
+      - name: Deploy to Dev Environment
+        run: |
+          # TBD: Configure kubectl context and namespace
+          kubectl set image deployment/legal-ops-ui \
+            legal-ops-ui=${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:dev-${{ github.sha }} \
+            -n legal-opinion-dev
+          kubectl rollout status deployment/legal-ops-ui -n legal-opinion-dev
+        env:
+          KUBECONFIG: ${{ secrets.DEV_KUBECONFIG }}
+```
+
+#### 13.3.3 Test Deployment Workflow
+
+```yaml
+# .github/workflows/deploy-test.yml
+name: Deploy to Test - UI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for semantic versioning
+      
+      - name: Generate Semantic Version
+        id: version
+        uses: mathieudutour/github-tag-action@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+        # TBD: Configure version bump strategy (major/minor/patch)
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Build Application
+        run: npm run build
+        env:
+          REACT_APP_API_URL: ${{ secrets.TEST_API_URL }}
+          REACT_APP_KEYCLOAK_URL: ${{ secrets.TEST_KEYCLOAK_URL }}
+        # TBD: Configure all environment variables
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build Docker Image with Semantic Version
+        run: |
+          docker build -t legal-ops-ui:${{ steps.version.outputs.new_tag }} .
+          docker tag legal-ops-ui:${{ steps.version.outputs.new_tag }} ${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:${{ steps.version.outputs.new_tag }}
+          docker tag legal-ops-ui:${{ steps.version.outputs.new_tag }} ${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:test-latest
+        # TBD: Configure Dockerfile path and build args
+      
+      - name: Push Docker Image to ECR
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:${{ steps.version.outputs.new_tag }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:test-latest
+      
+      - name: Deploy to Test Environment
+        run: |
+          # TBD: Configure kubectl context and namespace
+          kubectl set image deployment/legal-ops-ui \
+            legal-ops-ui=${{ steps.login-ecr.outputs.registry }}/legal-ops-ui:${{ steps.version.outputs.new_tag }} \
+            -n legal-opinion-test
+          kubectl rollout status deployment/legal-ops-ui -n legal-opinion-test
+        env:
+          KUBECONFIG: ${{ secrets.TEST_KUBECONFIG }}
+```
+
+### 13.4 Backend Pipeline (legal-ops-api)
+
+#### 13.4.1 PR Validation Workflow
+
+```yaml
+# .github/workflows/pr-validation.yml
+name: PR Validation - API
+
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  lint:
+    name: Lint Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js / Python
+        # TBD: Use Node.js for NestJS or Python setup for FastAPI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+        # OR for Python:
+        # uses: actions/setup-python@v4
+        # with:
+        #   python-version: '3.11'
+      
+      - name: Install Dependencies
+        run: npm ci  # or: pip install -r requirements.txt
+      
+      - name: Run Linter
+        run: npm run lint  # or: pylint, flake8, black --check
+        # TBD: Configure linter rules
+      
+  sonarqube:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js / Python
+        # TBD: Configure based on backend technology
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run SonarQube
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        # TBD: Configure SonarQube project key and quality gates
+      
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js / Python
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run Unit Tests
+        run: npm run test:unit
+        # TBD: Configure test coverage thresholds
+      
+      - name: Upload Coverage Reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          # TBD: Configure codecov token
+```
+
+#### 13.4.2 Dev Deployment Workflow
+
+```yaml
+# .github/workflows/deploy-dev.yml
+name: Deploy to Dev - API
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js / Python
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run Tests
+        run: npm run test
+        # TBD: Configure test suite
+      
+      - name: Build Application
+        run: npm run build
+        # TBD: Configure build command and output
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build Docker Image
+        run: |
+          docker build -t legal-ops-api:dev-${{ github.sha }} .
+          docker tag legal-ops-api:dev-${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/legal-ops-api:dev-${{ github.sha }}
+          docker tag legal-ops-api:dev-${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/legal-ops-api:dev-latest
+        # TBD: Configure Dockerfile path and build args
+      
+      - name: Push Docker Image to ECR
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/legal-ops-api:dev-${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/legal-ops-api:dev-latest
+      
+      - name: Deploy to Dev Environment
+        run: |
+          # TBD: Configure kubectl context and namespace
+          kubectl set image deployment/legal-ops-api \
+            legal-ops-api=${{ steps.login-ecr.outputs.registry }}/legal-ops-api:dev-${{ github.sha }} \
+            -n legal-opinion-dev
+          kubectl rollout status deployment/legal-ops-api -n legal-opinion-dev
+        env:
+          KUBECONFIG: ${{ secrets.DEV_KUBECONFIG }}
+```
+
+#### 13.4.3 Test Deployment Workflow
+
+```yaml
+# .github/workflows/deploy-test.yml
+name: Deploy to Test - API
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Generate Semantic Version
+        id: version
+        uses: mathieudutour/github-tag-action@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+        # TBD: Configure version bump strategy
+      
+      - name: Setup Node.js / Python
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run Tests
+        run: npm run test
+      
+      - name: Build Application
+        run: npm run build
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build Docker Image with Semantic Version
+        run: |
+          docker build -t legal-ops-api:${{ steps.version.outputs.new_tag }} .
+          docker tag legal-ops-api:${{ steps.version.outputs.new_tag }} ${{ steps.login-ecr.outputs.registry }}/legal-ops-api:${{ steps.version.outputs.new_tag }}
+          docker tag legal-ops-api:${{ steps.version.outputs.new_tag }} ${{ steps.login-ecr.outputs.registry }}/legal-ops-api:test-latest
+        # TBD: Configure Dockerfile path and build args
+      
+      - name: Push Docker Image to ECR
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/legal-ops-api:${{ steps.version.outputs.new_tag }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/legal-ops-api:test-latest
+      
+      - name: Deploy to Test Environment
+        run: |
+          # TBD: Configure kubectl context and namespace
+          kubectl set image deployment/legal-ops-api \
+            legal-ops-api=${{ steps.login-ecr.outputs.registry }}/legal-ops-api:${{ steps.version.outputs.new_tag }} \
+            -n legal-opinion-test
+          kubectl rollout status deployment/legal-ops-api -n legal-opinion-test
+        env:
+          KUBECONFIG: ${{ secrets.TEST_KUBECONFIG }}
+```
+
+### 13.5 Pipeline Flow Summary
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PIPELINE FLOW DIAGRAM                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  REPOSITORY: legal-ops-ui OR legal-ops-api                  │
+│                                                              │
+│  1. PR to dev branch                                         │
+│     └─> PR Validation Pipeline                               │
+│         ├─> Lint Check                                       │
+│         ├─> SonarQube Analysis                               │
+│         └─> Unit Tests                                        │
+│         └─> ✅ All Pass → Merge to dev                       │
+│                                                              │
+│  2. Merge to dev branch                                      │
+│     └─> Dev Deployment Pipeline                              │
+│         ├─> Build Application                                │
+│         ├─> Build Docker Image (dev-{sha})                   │
+│         ├─> Push to ECR                                       │
+│         └─> Deploy to Dev Environment                        │
+│                                                              │
+│  3. Merge dev → main branch                                  │
+│     └─> Test Deployment Pipeline                             │
+│         ├─> Generate Semantic Version (v1.2.3)               │
+│         ├─> Build Application                                │
+│         ├─> Build Docker Image (v1.2.3)                     │
+│         ├─> Push to ECR                                       │
+│         └─> Deploy to Test Environment                      │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 13.6 Required GitHub Secrets
+
+**For both repositories:**
+- `AWS_ACCESS_KEY_ID` - AWS credentials for ECR access
+- `AWS_SECRET_ACCESS_KEY` - AWS credentials for ECR access
+- `SONAR_TOKEN` - SonarQube authentication token
+- `SONAR_HOST_URL` - SonarQube server URL
+- `DEV_KUBECONFIG` - Kubernetes config for dev environment
+- `TEST_KUBECONFIG` - Kubernetes config for test environment
+
+**Repository-specific:**
+- `DEV_API_URL` / `TEST_API_URL` - API endpoint URLs (for UI repo)
+- `DEV_KEYCLOAK_URL` / `TEST_KEYCLOAK_URL` - Keycloak URLs (for UI repo)
+
+### 13.7 Configuration Notes (TBD)
+
+All workflows include `# TBD` comments indicating areas that need configuration:
+
+- **Linter Rules** - ESLint/Pylint configuration and rules
+- **SonarQube** - Project keys, quality gates, analysis parameters
+- **Test Coverage** - Coverage thresholds and reporting
+- **Build Configuration** - Build commands, environment variables, build args
+- **Dockerfile** - Dockerfile paths and optimization
+- **Kubernetes** - Namespace, deployment names, rollout strategies
+- **Semantic Versioning** - Version bump strategy (major/minor/patch)
+- **Environment Variables** - All required env vars for each environment
+
+These configurations will be finalized during implementation based on specific technology choices and infrastructure setup.
 
 ---
 
