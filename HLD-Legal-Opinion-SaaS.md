@@ -67,7 +67,12 @@ A SaaS platform for **law firms** that:
 ### 2.3 AI/LLM Integration Overview
 The platform leverages **LLM APIs** (configurable - OpenAI GPT-4, Anthropic Claude, Google Gemini) for:
 1. **Document Intelligence**: Extract structured data from uploaded documents (property details, parties, dates, amounts)
-2. **Opinion Generation**: Generate draft legal opinions by combining extracted data with predefined templates
+   - **Regional Language Support**: OCR extracts text from documents in regional languages, then translates to English for processing
+   - **Language Detection**: Automatically detects document language
+   - **Translation**: Converts regional language text to English while preserving legal terms and names
+2. **Opinion Generation**: Generate draft legal opinions by combining extracted data with **bank client-specific templates**
+   - Each bank client has their own opinion format template
+   - Opinions always generated in English only
 3. **Content Validation**: Identify discrepancies and flag potential issues in documents
 
 See **Section 10** for the detailed LLM Integration Architecture diagram.
@@ -88,11 +93,16 @@ See **Section 7** for the detailed Multi-Tenancy Architecture diagram.
 **Key Concept:**
 - **TENANT = Law Firm** (e.g., Sharma & Associates) - Has own branding, users, isolated data, pays for SaaS
 - **CLIENTS = Banks** (e.g., HDFC Bank, ICICI Bank) - Served by the law firm tenant
+- **END CUSTOMERS = Loan Applicants/Borrowers** - End customers are asked by banks to approach lawyers for opinion
 
 **Data Model:**
 - `tenant_id` = Law Firm ID (data isolation)
 - `client_id` = Bank ID (filter within tenant)
-- Opinion requests tagged with both tenant_id AND client_id
+- `end_customer_id` = Borrower/Loan Applicant ID (end customer who needs opinion)
+- Opinion requests tagged with tenant_id, client_id, AND end_customer_id
+
+**Workflow:**
+End Customer (Borrower) → Bank Client → Law Firm → Opinion Generation → Notifications to Bank Client + End Customer (configurable)
 
 ### 2.6 Document Types Handled
 - Property Documents (Sale Deed, Title Deed, Encumbrance Certificate)
@@ -100,6 +110,8 @@ See **Section 7** for the detailed Multi-Tenancy Architecture diagram.
 - Financial Documents (Bank Statements, ITR, Balance Sheets)
 - Collateral Documents (Hypothecation Agreement, Mortgage Deed)
 - Guarantor Documents (Personal Guarantee, Net Worth Statement)
+
+**Note:** Documents may be in regional languages (not limited to English). The system automatically detects the language, translates to English, and processes them. Final opinions are always generated in English only.
 
 ---
 
@@ -119,13 +131,21 @@ See **Section 7** for the detailed Multi-Tenancy Architecture diagram.
 
 ### 3.2 User Journey
 
-1. **Paralegal/Clerk** creates a request for a bank client (e.g., HDFC)
-2. **Paralegal/Clerk** uploads documents (title deeds, agreements, etc.)
-3. **System** extracts data from documents using OCR + LLM
-4. **Panel Advocate** receives assignment notification
-5. **Panel Advocate** reviews extracted data and generates opinion draft using AI
-6. **Panel Advocate** edits and submits the final opinion
-7. **System** notifies that opinion is ready for the bank client
+1. **End Customer (Borrower)** approaches law firm with bank's referral (e.g., HDFC Bank referred them)
+2. **Paralegal/Clerk** creates opinion request for bank client (HDFC) and end customer (borrower)
+3. **Paralegal/Clerk** uploads documents (title deeds, agreements, etc.) - may be in regional languages
+4. **System** processes documents:
+   - OCR extraction (supports regional languages)
+   - Translation to English (if documents are in regional language)
+   - LLM extracts structured data from English text
+5. **Panel Advocate** receives assignment notification
+6. **Panel Advocate** reviews extracted data and generates opinion draft using AI:
+   - Uses bank client-specific opinion template
+   - Generates opinion in English only
+7. **Panel Advocate** edits and submits the final opinion
+8. **System** notifies opinion completion (both configurable per bank client):
+   - Bank client (notified if bank_client.notify_bank_on_completion = true)
+   - End customer (notified if bank_client.notify_end_customer_on_completion = true)
 
 ---
 
@@ -166,7 +186,8 @@ See **Section 7** for the detailed Multi-Tenancy Architecture diagram.
 | **Document Storage** | Amazon S3 | Documents, PDFs (tenant folders) |
 | **Authentication** | Keycloak | SSO, MFA, user management |
 | **AI/LLM** | LLM API (GPT-4/Claude/Gemini) | Document extraction, opinion generation |
-| **OCR** | Tesseract / AWS Textract | Text extraction from images |
+| **OCR** | Tesseract / AWS Textract | Text extraction from images (supports regional languages) |
+| **Translation** | LLM API (GPT-4/Claude) | Regional language to English translation |
 | **Email** | AWS SES / SendGrid | Notifications |
 | **Container Runtime** | Docker | Containerization |
 | **Orchestration (Prod)** | Kubernetes (EKS) | Production scaling |
@@ -636,11 +657,13 @@ export class AuthGuard implements CanActivate {
 
 **Key Tables:** All tables include a `tenant_id` column for multi-tenancy isolation.
 - **tenants** - Law firm configuration and branding
-- **bank_clients** - Banks served by each law firm
+- **bank_clients** - Banks served by each law firm (with opinion templates and notification settings)
+- **end_customers** - Loan applicants/borrowers (end customers referred by banks)
 - **users** - User accounts linked to Keycloak
-- **opinion_requests** - Opinion requests from bank clients  
-- **documents** - Uploaded documents with OCR data
-- **opinions** - Generated legal opinions
+- **opinion_requests** - Opinion requests linking bank client, end customer, and law firm
+- **documents** - Uploaded documents with OCR data (supports regional languages)
+- **opinion_templates** - Bank client-specific opinion format templates
+- **opinions** - Generated legal opinions (always in English)
 - **audit_logs** - Activity tracking for compliance
 
 ### 9.2 Key Tables Schema
@@ -698,10 +721,49 @@ CREATE TABLE bank_clients (
     contact_email VARCHAR(255),
     contact_phone VARCHAR(20),
     address TEXT,
+    -- Opinion Template Configuration
+    default_template_id UUID REFERENCES opinion_templates(id),
+    -- Notification Settings (all configurable per bank)
+    notify_bank_on_completion BOOLEAN DEFAULT false,  -- Configurable: notify bank client
+    notify_end_customer_on_completion BOOLEAN DEFAULT false,  -- Configurable: notify end customer
+    end_customer_notification_email_template TEXT,
+    bank_notification_email_template TEXT,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(tenant_id, code)
+);
+
+-- End Customers Table (Loan Applicants/Borrowers)
+CREATE TABLE end_customers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id),  -- Law Firm
+    client_id UUID NOT NULL REFERENCES bank_clients(id),  -- Bank that referred them
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    phone VARCHAR(20),
+    pan_number VARCHAR(10),
+    aadhaar_number VARCHAR(12),
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, client_id, email)
+);
+
+-- Opinion Templates Table (Bank Client-Specific Formats)
+CREATE TABLE opinion_templates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id),  -- Law Firm
+    client_id UUID NOT NULL REFERENCES bank_clients(id),  -- Bank Client
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    template_content JSONB NOT NULL,  -- Structured template with sections, placeholders
+    loan_type VARCHAR(50),  -- Optional: specific to loan type
+    is_default BOOLEAN DEFAULT false,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, client_id, name)
 );
 
 -- Opinion Requests Table
@@ -709,12 +771,13 @@ CREATE TABLE opinion_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id),    -- Law Firm
     client_id UUID NOT NULL REFERENCES bank_clients(id), -- Bank Client
+    end_customer_id UUID NOT NULL REFERENCES end_customers(id), -- End Customer (Borrower)
     reference_number VARCHAR(50) NOT NULL,
-    borrower_id UUID NOT NULL REFERENCES borrowers(id),
     loan_type VARCHAR(50) NOT NULL,
     loan_amount DECIMAL(15,2),
     property_location TEXT,
     branch_code VARCHAR(20),
+    template_id UUID REFERENCES opinion_templates(id),  -- Bank client-specific template
     created_by UUID NOT NULL REFERENCES users(id),
     assigned_lawyer_id UUID REFERENCES users(id),
     status VARCHAR(30) DEFAULT 'PENDING',
@@ -736,8 +799,14 @@ CREATE TABLE documents (
     s3_key VARCHAR(500) NOT NULL,
     file_size BIGINT,
     mime_type VARCHAR(100),
+    -- Regional Language Support
+    detected_language VARCHAR(10),  -- e.g., 'en', 'te', 'hi', 'ta', etc.
+    original_language_text TEXT,    -- OCR text in original language
+    translated_text TEXT,           -- Translated to English
+    translation_status VARCHAR(20) DEFAULT 'PENDING',  -- PENDING, COMPLETED, FAILED
+    -- OCR and Extraction
     ocr_status VARCHAR(20) DEFAULT 'PENDING',
-    ocr_text TEXT,
+    ocr_text TEXT,                   -- Final English text used for extraction
     extracted_data JSONB,
     ai_confidence DECIMAL(3,2),
     uploaded_by UUID NOT NULL REFERENCES users(id),
@@ -818,6 +887,12 @@ CREATE POLICY tenant_isolation ON legal_opinions
 
 ![LLM Integration Architecture](ui-mockups/arch-03-llm-integration.png?v=5)
 
+**Key Features:**
+- **Regional Language Support**: Documents in regional languages are OCR'd, detected, translated to English, then processed
+- **Bank Client Templates**: Each bank client has their own opinion format template (configured per tenant + client)
+- **English-Only Opinions**: Final opinions are always generated in English, regardless of source document language
+- **Configurable Notifications**: Opinion completion notifications sent to bank client and/or end customer (both configurable per bank)
+
 ### 10.2 AI Workflow: Automated vs Manual Steps
 
 **Key Question: Are opinions generated automatically?**
@@ -826,27 +901,42 @@ CREATE POLICY tenant_isolation ON legal_opinions
 
 #### Automated Steps (Triggered on Document Upload)
 
-1. **Document Upload** → User uploads documents for an opinion request
+1. **Document Upload** → User uploads documents for an opinion request (may be in regional languages)
 2. **OCR Processing** → Automatic text extraction from PDFs/images (Tesseract/Textract)
-3. **AI Data Extraction** → Automatic structured data extraction using LLM:
+   - Supports regional languages (not limited to English)
+   - Extracts text in original document language
+3. **Language Detection** → Automatic detection of document language
+   - Detects if document is in English or regional language
+   - Stores language code (e.g., 'en', 'te', 'hi', 'ta', etc.)
+4. **Translation to English** → Automatic translation (if document is not in English)
+   - Uses LLM API to translate regional language text to English
+   - Preserves legal terms, names, addresses, and numbers exactly
+   - Stores both original_language_text and translated_text
+5. **AI Data Extraction** → Automatic structured data extraction using LLM (from English text):
    - Property address, survey number
    - Party names (buyer, seller, mortgagor)
    - Registration dates, document numbers
    - Property area, valuation
    - Encumbrances, if any
-4. **Data Storage** → Extracted data saved to database with confidence scores
+6. **Data Storage** → Extracted data saved to database with confidence scores
+   - Stores: original_language_text, translated_text, detected_language, extracted_data
 
 #### Optional: Auto-Generate Draft Opinion (Configurable)
 
 **Option A: Manual Trigger (Default)**
 - Lawyer clicks "Generate Draft Opinion" button in Opinion Editor
-- AI generates draft opinion using extracted data + template
+- AI generates draft opinion using:
+  - Extracted data (from English text)
+  - Bank client-specific opinion template (configured per bank)
+- Opinion always generated in English only
 - Lawyer reviews, edits, and submits
 
 **Option B: Automatic Draft Generation (Configurable per Tenant)**
 - After all documents are uploaded and extraction is complete
 - System automatically triggers opinion draft generation
+- Uses bank client's default opinion template
 - Draft opinion saved with `status: 'DRAFT'` and `ai_generated: true`
+- Opinion always in English
 - Lawyer receives notification to review the draft
 - Lawyer opens Opinion Editor, reviews AI-generated content, edits as needed, and submits
 
@@ -860,39 +950,57 @@ CREATE POLICY tenant_isolation ON legal_opinions
 #### Complete Workflow Example
 
 ```
-1. Paralegal creates opinion request for Bank Client (HDFC)
+1. End Customer (Borrower) approaches law firm (referred by Bank Client - HDFC)
+2. Paralegal creates opinion request for Bank Client (HDFC) and End Customer
    └─ Status: PENDING
+   └─ Links: tenant_id (Law Firm), client_id (HDFC Bank), end_customer_id (Borrower)
 
-2. Paralegal uploads documents (Title Deed, Sale Agreement, etc.)
+3. Paralegal uploads documents (Title Deed, Sale Agreement, etc.)
+   └─ Documents may be in regional languages (not English)
    └─ Status: DOCUMENTS_UPLOADED
    
-3. [AUTOMATIC] System processes documents:
-   ├─ OCR extracts text from images/PDFs
-   ├─ LLM extracts structured data (property, parties, dates)
+4. [AUTOMATIC] System processes documents:
+   ├─ OCR extracts text from images/PDFs (supports regional languages)
+   ├─ Language Detection: Detects document language (e.g., regional language)
+   ├─ Translation to English: If not English, translates to English using LLM
+   ├─ LLM extracts structured data from English text (property, parties, dates)
    └─ Extracted data saved with confidence scores
    └─ Status: EXTRACTION_COMPLETE
+   └─ Database: Stores both original_language_text and translated_text
 
-4. [AUTOMATIC or MANUAL] Opinion Draft Generation:
+5. [AUTOMATIC or MANUAL] Opinion Draft Generation:
+   ├─ System loads bank client-specific opinion template
+   │   └─ Each bank client has their own opinion format (configured in opinion_templates table)
+   │   └─ Template selected from: request.template_id OR bank_client.default_template_id
    ├─ If auto-generate enabled: System generates draft opinion
    ├─ If manual: Lawyer clicks "Generate Draft" button
-   └─ AI creates opinion using extracted data + legal template
+   └─ AI creates opinion using:
+   │   ├─ Extracted data (from English text)
+   │   ├─ Bank client-specific template structure
+   │   └─ Always generates in English only (final opinion language)
    └─ Status: DRAFT (ai_generated: true)
 
-5. [MANUAL] Lawyer receives notification/assignment
+6. [MANUAL] Lawyer receives notification/assignment
    └─ Opens Opinion Editor
 
-6. [MANUAL] Lawyer reviews:
+7. [MANUAL] Lawyer reviews:
    ├─ Reviews extracted data (can verify/correct)
-   ├─ Reviews AI-generated opinion draft
+   ├─ Reviews AI-generated opinion draft (in English)
    ├─ Edits content as needed
    └─ Adds any additional legal analysis
 
-7. [MANUAL] Lawyer submits final opinion
+8. [MANUAL] Lawyer submits final opinion (always in English)
    └─ Status: COMPLETED
-   └─ ai_generated: true, but lawyer_reviewed: true, lawyer_approved: true
+   └─ ai_generated: true, lawyer_reviewed: true, lawyer_approved: true
 
-8. [AUTOMATIC] System notifies bank client
-   └─ Opinion ready for download
+9. [AUTOMATIC] System sends notifications (configurable per bank client):
+   ├─ Bank Client (HDFC) - Conditionally notified
+   │   └─ Notified if: bank_client.notify_bank_on_completion = true
+   │   └─ Uses: bank_client.bank_notification_email_template
+   └─ End Customer (Borrower) - Conditionally notified
+   │   └─ Notified if: bank_client.notify_end_customer_on_completion = true
+   │   └─ Uses: bank_client.end_customer_notification_email_template
+   └─ Opinion ready for download (always in English)
 ```
 
 #### Configuration Options
@@ -904,8 +1012,21 @@ CREATE POLICY tenant_isolation ON legal_opinions
     "auto_extract_on_upload": true,        // Always automatic
     "auto_generate_opinion_draft": false,  // Default: manual trigger
     "require_lawyer_review": true,         // Always required
-    "min_confidence_score": 0.85          // Threshold for auto-extraction
+    "min_confidence_score": 0.85,          // Threshold for auto-extraction
+    "supported_regional_languages": ["te", "hi", "ta", "kn", "ml", "mr", "gu", "or", "pa", "bn", "as"],  // Generic regional language codes
+    "default_translation_target": "en"     // Always translate to English
   }
+}
+```
+
+**Bank Client Settings (per Bank):**
+```json
+{
+  "client_id": "hdfc-bank-uuid",
+  "default_template_id": "hdfc-template-uuid",  // Bank-specific opinion format
+  "notify_bank_on_completion": false,            // Configurable: notify bank client (default: false)
+  "notify_end_customer_on_completion": false,     // Configurable: notify end customer (default: false)
+  "opinion_language": "en"                      // Always English for final opinion
 }
 ```
 
@@ -920,17 +1041,56 @@ CREATE POLICY tenant_isolation ON legal_opinions
 #### API Endpoints
 
 ```typescript
-// Automatic extraction (triggered on document upload)
-POST /api/v1/documents/{id}/extract
+// Automatic processing (triggered on document upload)
+// Handles: OCR → Language Detection → Translation → Extraction
+POST /api/v1/documents/{id}/process
 → Returns: ExtractionResult with structured data
+→ Stores: original_language_text, translated_text, detected_language
 
-// Manual opinion draft generation
+// Manual opinion draft generation (uses bank client template)
 POST /api/v1/opinions/{id}/generate-draft
-→ Returns: OpinionDraft (AI-generated content)
+→ Returns: OpinionDraft (AI-generated content in English)
+→ Uses: Bank client-specific template from opinion_requests.template_id
 
 // Lawyer review and submission
 PUT /api/v1/opinions/{id}
 Body: { content: "...", lawyer_reviewed: true, status: "COMPLETED" }
+
+// Notification on opinion completion
+POST /api/v1/opinions/{id}/notify
+→ Sends notifications to (both configurable per bank client):
+   - Bank client (if bank_client.notify_bank_on_completion = true)
+   - End customer (if bank_client.notify_end_customer_on_completion = true)
+```
+
+#### Notification Flow
+
+```typescript
+// Notification service
+async notifyOpinionCompletion(opinionId: string) {
+  const opinion = await this.opinionService.findById(opinionId);
+  const request = await this.requestService.findById(opinion.loan_request_id);
+  const bankClient = await this.clientService.findById(request.client_id);
+  const endCustomer = await this.endCustomerService.findById(request.end_customer_id);
+  
+  // Conditionally notify bank client (configurable per bank)
+  if (bankClient.notify_bank_on_completion && bankClient.contact_email) {
+    await this.emailService.send({
+      to: bankClient.contact_email,
+      template: bankClient.bank_notification_email_template,
+      data: { opinion, request, bankClient }
+    });
+  }
+  
+  // Conditionally notify end customer (configurable per bank)
+  if (bankClient.notify_end_customer_on_completion && endCustomer.email) {
+    await this.emailService.send({
+      to: endCustomer.email,
+      template: bankClient.end_customer_notification_email_template,
+      data: { opinion, request, endCustomer }
+    });
+  }
+}
 ```
 
 ### 10.3 AI Service Implementation
@@ -957,15 +1117,74 @@ interface OpinionDraft {
 
 class AIService {
   
-  async extractDocumentData(
-    documentId: string, 
-    ocrText: string, 
+  /**
+   * Process document with regional language support
+   * 1. OCR extraction (supports regional languages)
+   * 2. Language detection
+   * 3. Translation to English (if needed)
+   * 4. Data extraction from English text
+   */
+  async processDocument(
+    documentId: string,
     documentType: string
   ): Promise<ExtractionResult> {
     
-    const prompt = this.buildExtractionPrompt(documentType, ocrText);
+    // Step 1: OCR Extraction (supports regional languages)
+    const ocrResult = await this.ocrService.extract(documentId);
+    // ocrResult.text contains text in original language
+    // ocrResult.language contains detected language code
     
-    const response = await openai.chat.completions.create({
+    // Step 2: Language Detection
+    const detectedLanguage = await this.detectLanguage(ocrResult.text);
+    
+    // Step 3: Translation to English (if not already English)
+    let englishText = ocrResult.text;
+    if (detectedLanguage !== 'en') {
+      englishText = await this.translateToEnglish(
+        ocrResult.text, 
+        detectedLanguage
+      );
+    }
+    
+    // Step 4: Extract structured data from English text
+    return await this.extractDocumentData(
+      documentId,
+      englishText,
+      documentType,
+      ocrResult.text,  // Store original language text
+      detectedLanguage
+    );
+  }
+  
+  async detectLanguage(text: string): Promise<string> {
+    // Use LLM or language detection library
+    const response = await this.llmService.detectLanguage(text);
+    return response.language; // Returns ISO 639-1 code (e.g., 'en', 'te', 'hi')
+  }
+  
+  async translateToEnglish(
+    text: string, 
+    sourceLanguage: string
+  ): Promise<string> {
+    const prompt = `Translate the following text from ${sourceLanguage} to English. 
+    Preserve all legal terms, names, addresses, and numbers exactly as they appear.
+    Text: ${text}`;
+    
+    const response = await this.llmService.translate(prompt);
+    return response.translatedText;
+  }
+  
+  async extractDocumentData(
+    documentId: string, 
+    englishText: string, 
+    documentType: string,
+    originalText?: string,
+    detectedLanguage?: string
+  ): Promise<ExtractionResult> {
+    
+    const prompt = this.buildExtractionPrompt(documentType, englishText);
+    
+    const response = await this.llmService.create({
       model: 'gpt-4-turbo-preview',
       messages: [
         { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
@@ -975,22 +1194,53 @@ class AIService {
       temperature: 0.2
     });
     
-    return JSON.parse(response.choices[0].message.content);
+    const result = JSON.parse(response.choices[0].message.content);
+    
+    // Store both original and translated text in database
+    await this.documentService.update(documentId, {
+      detected_language: detectedLanguage,
+      original_language_text: originalText,
+      translated_text: englishText,
+      ocr_text: englishText,  // Use English for extraction
+      translation_status: detectedLanguage !== 'en' ? 'COMPLETED' : 'N/A'
+    });
+    
+    return result;
   }
   
+  /**
+   * Generate opinion draft using bank client-specific template
+   * Always generates in English only
+   */
   async generateOpinionDraft(
     requestId: string,
     extractedData: Record<string, any>,
-    templateId: string
+    clientId: string  // Bank client ID to get template
   ): Promise<OpinionDraft> {
     
-    const template = await this.templateService.findById(templateId);
-    const prompt = this.buildGenerationPrompt(extractedData, template);
+    // Load bank client-specific opinion template
+    const request = await this.requestService.findById(requestId);
+    const templateId = request.template_id || 
+      await this.getDefaultTemplateForClient(clientId);
     
-    const response = await openai.chat.completions.create({
+    const template = await this.templateService.findById(templateId);
+    
+    // Build prompt with template structure
+    const prompt = this.buildGenerationPrompt(
+      extractedData, 
+      template,
+      'en'  // Always generate in English
+    );
+    
+    const response = await this.llmService.create({
       model: 'gpt-4-turbo-preview',
       messages: [
-        { role: 'system', content: GENERATION_SYSTEM_PROMPT },
+        { 
+          role: 'system', 
+          content: `You are a legal expert. Generate legal opinions in English only. 
+          Follow the provided template structure exactly. 
+          ${GENERATION_SYSTEM_PROMPT}` 
+        },
         { role: 'user', content: prompt }
       ],
       response_format: { type: 'json_object' },
@@ -998,6 +1248,11 @@ class AIService {
     });
     
     return JSON.parse(response.choices[0].message.content);
+  }
+  
+  async getDefaultTemplateForClient(clientId: string): Promise<string> {
+    const client = await this.clientService.findById(clientId);
+    return client.default_template_id;
   }
 }
 ```
@@ -1136,7 +1391,7 @@ List of all loan requests with search, filters (status, loan type, priority), an
 #### 12.1.4 Opinion Request Detail
 **File:** [ui-mockups/04-opinion-request-detail.html](ui-mockups/04-opinion-request-detail.html)
 
-Single request view with borrower details, documents list, quick actions, and activity timeline.
+Single request view with end customer (borrower) details, bank client information, documents list, quick actions, and activity timeline.
 
 **AI Workflow Alignment:**
 - Shows document extraction status (✓ AI Extracted / Pending Review)
