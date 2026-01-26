@@ -22,13 +22,30 @@ This document provides free training resources for the DevOps technologies requi
 - **English** - Tutorials from channels like Telusko, Hitesh Choudhary, Kunal Kushwaha
 - **Telugu** - Tutorials from channels like Naresh i Technologies, Telugu TechTuts
 
-**Learning Path:**
-1. **Docker** - Containerization basics (Week 1)
-2. **GitHub Actions** - CI/CD pipelines (Week 2)
-3. **AWS Cloud** - Cloud infrastructure (Week 3-4)
-4. **Kubernetes** - Container orchestration (Week 5-6)
+**Training Structure:**
+This training is divided into **two phases**, each lasting **1 month**:
 
-**Estimated Time:** 6-8 weeks for complete coverage (2-3 hours per day)
+### Phase 1: Basic Learning (Month 1)
+**Duration:** 4 weeks (1 month)  
+**Time Commitment:** 2-3 hours per day  
+**Focus:** Fundamentals and hands-on basics
+
+**Week 1:** Docker Basics  
+**Week 2:** GitHub Actions Basics  
+**Week 3:** AWS Cloud Basics  
+**Week 4:** Kubernetes Basics
+
+### Phase 2: Advanced Learning (Month 2)
+**Duration:** 4 weeks (1 month)  
+**Time Commitment:** 2-3 hours per day  
+**Focus:** Advanced concepts, production scenarios, and project-specific implementation
+
+**Week 1:** Docker Advanced  
+**Week 2:** GitHub Actions Advanced  
+**Week 3:** AWS Cloud Advanced  
+**Week 4:** Kubernetes Advanced
+
+**Total Estimated Time:** 2 months (8 weeks) with 2-3 hours daily practice
 
 ---
 
@@ -42,12 +59,21 @@ Docker is a containerization platform that packages applications and their depen
 - Build production-ready container images
 - Deploy containers to Kubernetes
 
-**Key Concepts to Learn:**
-- Docker images and containers
-- Dockerfile creation
-- Docker Compose for multi-container applications
-- Container networking and volumes
-- Image building and optimization
+---
+
+## PHASE 1: DOCKER BASICS (Week 1 - Month 1)
+
+**Duration:** 1 week  
+**Time:** 2-3 hours per day  
+**Goal:** Understand Docker fundamentals and create your first containers
+
+### Key Concepts to Learn (Basic):
+- What are containers and why use them
+- Docker installation and setup
+- Basic Docker commands (run, build, images, containers)
+- Creating simple Dockerfiles
+- Understanding Docker images and layers
+- Basic Docker Compose concepts
 
 ### Free Training Resources
 
@@ -113,16 +139,94 @@ Docker is a containerization platform that packages applications and their depen
 - **URL:** https://www.docker.com/101-tutorial/
 - **Description:** Official Docker 101 tutorial with interactive exercises.
 
-### Learning Checklist
+### Learning Checklist (Basic)
 
+- [ ] Install Docker on your machine
 - [ ] Understand what containers are and why we use them
-- [ ] Learn basic Docker commands (run, build, push, pull)
-- [ ] Create a Dockerfile for a simple application
+- [ ] Learn basic Docker commands (run, build, images, ps, stop, rm)
+- [ ] Create a simple Dockerfile for a basic application
 - [ ] Understand Docker images and layers
-- [ ] Learn Docker Compose for multi-container apps
 - [ ] Practice building and running containers
-- [ ] Understand Docker networking and volumes
-- [ ] Learn Docker best practices and optimization
+- [ ] Learn basic Docker Compose (single service)
+- [ ] Understand Docker volumes (basic)
+
+---
+
+## PHASE 2: DOCKER ADVANCED (Week 1 - Month 2)
+
+**Duration:** 1 week  
+**Time:** 2-3 hours per day  
+**Goal:** Master Docker for production use and multi-container applications
+
+### Key Concepts to Learn (Advanced):
+- Multi-stage Dockerfile builds
+- Docker Compose for complex applications (multiple services)
+- Container networking (custom networks, bridge, host)
+- Advanced volume management
+- Docker image optimization and best practices
+- Docker security (user permissions, secrets)
+- Docker build arguments and environment variables
+- Multi-architecture builds
+- Docker registry (push/pull to ECR)
+
+### Advanced Training Resources
+
+#### Advanced YouTube Tutorials (English & Telugu)
+
+**1. Docker Advanced Topics - Hitesh Choudhary (English)**
+- **Channel:** Hitesh Choudhary
+- **Search:** "Hitesh Choudhary Docker advanced multi-stage"
+- **Channel Link:** https://www.youtube.com/@HiteshChoudharydotcom
+- **Duration:** ~3 hours
+- **Description:** Advanced Docker concepts including multi-stage builds, optimization, and production best practices.
+
+**2. Docker Compose Advanced - Telusko (English)**
+- **Channel:** Telusko
+- **Search:** "Telugu TechTuts Docker advanced Telugu"
+- **Channel Link:** https://www.youtube.com/@Telusko
+- **Duration:** ~2 hours
+- **Description:** Advanced Docker Compose with networking, volumes, and multi-service applications.
+
+**3. Docker Advanced in Telugu - Naresh i Technologies**
+- **Channel:** Naresh i Technologies
+- **Search:** "Naresh i Technologies Docker advanced Telugu"
+- **Channel Link:** https://www.youtube.com/@NareshiTechnologies
+- **Duration:** ~3 hours
+- **Description:** Advanced Docker concepts in Telugu including production scenarios.
+
+### Advanced Hands-On Projects
+
+**Project 1: Multi-Container Application**
+- Create Docker Compose file with frontend, backend, database, and Redis
+- Set up networking between containers
+- Configure volumes for data persistence
+- **Time:** 4-6 hours
+
+**Project 2: Optimized Production Image**
+- Create multi-stage Dockerfile
+- Optimize image size
+- Add health checks
+- Set up build arguments
+- **Time:** 3-4 hours
+
+**Project 3: Docker Registry Integration**
+- Build and tag images
+- Push to AWS ECR
+- Pull and deploy images
+- **Time:** 2-3 hours
+
+### Learning Checklist (Advanced)
+
+- [ ] Master multi-stage Dockerfile builds
+- [ ] Create complex Docker Compose files (multiple services)
+- [ ] Understand Docker networking (custom networks, bridge, host)
+- [ ] Master volume management (named volumes, bind mounts)
+- [ ] Optimize Docker images (reduce size, improve build time)
+- [ ] Learn Docker security best practices
+- [ ] Use Docker build arguments and environment variables
+- [ ] Push/pull images to/from Docker registry (ECR)
+- [ ] Understand Docker best practices for production
+- [ ] Troubleshoot Docker issues effectively
 
 ---
 
@@ -137,17 +241,35 @@ GitHub Actions is a CI/CD platform integrated with GitHub. For this project, we 
 - Deploy applications to Kubernetes
 - Run separate pipelines for UI and API repositories
 
-**Key Concepts to Learn:**
-- GitHub Actions workflows
-- Workflow triggers (push, PR, manual)
+---
+
+## PHASE 1: GITHUB ACTIONS BASICS (Week 2 - Month 1)
+
+**Duration:** 1 week  
+**Time:** 2-3 hours per day  
+**Goal:** Understand GitHub Actions fundamentals and create your first workflows
+
+### Key Concepts to Learn (Basic):
+- What is GitHub Actions and CI/CD
+- GitHub Actions workflow structure
+- Basic workflow triggers (push, pull_request)
 - Jobs, steps, and actions
-- Secrets and environment variables
-- Docker build and push actions
-- Kubernetes deployment actions
+- Using pre-built actions from marketplace
+- Basic secrets and environment variables
+- Simple CI workflow (lint, test)
 
-### Free Training Resources
+### Introduction
 
-#### 2.1 YouTube Tutorials (English & Telugu)
+GitHub Actions is a CI/CD platform integrated with GitHub. For this project, we use GitHub Actions to:
+- Automate linting, testing, and code quality checks
+- Build Docker images automatically
+- Push images to AWS ECR
+- Deploy applications to Kubernetes
+- Run separate pipelines for UI and API repositories
+
+### Free Training Resources (Basic)
+
+#### 2.1 YouTube Tutorials (English & Telugu) - Basic
 
 **1. GitHub Actions Tutorial - Hitesh Choudhary (English)**
 - **Channel:** Hitesh Choudhary
@@ -201,18 +323,96 @@ GitHub Actions is a CI/CD platform integrated with GitHub. For this project, we 
 - **URL:** https://github.com/actions/starter-workflows
 - **Description:** Collection of starter workflow templates for common use cases.
 
-### Learning Checklist
+### Learning Checklist (Basic)
 
-- [ ] Understand GitHub Actions workflow structure
-- [ ] Learn workflow triggers (push, pull_request, workflow_dispatch)
-- [ ] Understand jobs, steps, and actions
-- [ ] Learn how to use secrets and environment variables
+- [ ] Understand what GitHub Actions is and why we use it
+- [ ] Learn GitHub Actions workflow structure (YAML format)
+- [ ] Understand basic workflow triggers (push, pull_request)
+- [ ] Learn jobs, steps, and actions concepts
+- [ ] Use pre-built actions from marketplace
 - [ ] Create a simple CI workflow (lint, test)
-- [ ] Learn Docker build and push actions
-- [ ] Understand matrix builds and parallel jobs
-- [ ] Learn conditional steps and job dependencies
-- [ ] Practice creating CD workflows
-- [ ] Understand workflow best practices
+- [ ] Learn how to use secrets and environment variables (basic)
+- [ ] Practice running workflows and viewing logs
+- [ ] Understand workflow status badges
+
+---
+
+## PHASE 2: GITHUB ACTIONS ADVANCED (Week 2 - Month 2)
+
+**Duration:** 1 week  
+**Time:** 2-3 hours per day  
+**Goal:** Master GitHub Actions for production CI/CD pipelines
+
+### Key Concepts to Learn (Advanced):
+- Advanced workflow triggers (workflow_dispatch, schedule, webhooks)
+- Matrix builds and parallel jobs
+- Conditional steps and job dependencies
+- Docker build and push to ECR
+- Kubernetes deployment actions
+- Semantic versioning in workflows
+- Workflow reusability (reusable workflows)
+- Advanced secrets management
+- Workflow optimization and caching
+- Multi-repository workflows
+
+### Advanced Training Resources
+
+#### Advanced YouTube Tutorials (English & Telugu)
+
+**1. GitHub Actions Advanced - Kunal Kushwaha (English)**
+- **Channel:** Kunal Kushwaha
+- **Search:** "Kunal Kushwaha GitHub Actions advanced CI/CD"
+- **Channel Link:** https://www.youtube.com/@KunalKushwaha
+- **Duration:** ~4 hours
+- **Description:** Advanced GitHub Actions with Docker integration, ECR, Kubernetes deployment, and production scenarios.
+
+**2. GitHub Actions for Production - Hitesh Choudhary (English)**
+- **Channel:** Hitesh Choudhary
+- **Search:** "Hitesh Choudhary GitHub Actions production deployment"
+- **Channel Link:** https://www.youtube.com/@HiteshChoudharydotcom
+- **Duration:** ~3 hours
+- **Description:** Production-ready GitHub Actions workflows with best practices.
+
+**3. GitHub Actions Advanced in Telugu - Naresh i Technologies**
+- **Channel:** Naresh i Technologies
+- **Search:** "Naresh i Technologies GitHub Actions advanced Telugu"
+- **Channel Link:** https://www.youtube.com/@NareshiTechnologies
+- **Duration:** ~3 hours
+- **Description:** Advanced GitHub Actions concepts in Telugu including Docker and Kubernetes integration.
+
+### Advanced Hands-On Projects
+
+**Project 1: Complete CI/CD Pipeline**
+- Create PR validation workflow (lint, SonarQube, unit tests)
+- Create dev deployment workflow (build, push to ECR, deploy to K8s)
+- Create test deployment workflow (semantic versioning)
+- **Time:** 6-8 hours
+
+**Project 2: Multi-Repository Workflow**
+- Set up workflows for UI and API repositories
+- Implement reusable workflows
+- Configure cross-repository triggers
+- **Time:** 4-5 hours
+
+**Project 3: Advanced Workflow Features**
+- Implement matrix builds
+- Add workflow caching
+- Set up conditional deployments
+- Configure workflow environments
+- **Time:** 4-5 hours
+
+### Learning Checklist (Advanced)
+
+- [ ] Master advanced workflow triggers (workflow_dispatch, schedule)
+- [ ] Implement matrix builds and parallel jobs
+- [ ] Use conditional steps and job dependencies
+- [ ] Build and push Docker images to ECR
+- [ ] Deploy applications to Kubernetes using GitHub Actions
+- [ ] Implement semantic versioning in workflows
+- [ ] Create reusable workflows
+- [ ] Optimize workflows with caching
+- [ ] Set up workflow environments and approvals
+- [ ] Troubleshoot workflow failures effectively
 
 ---
 
@@ -228,15 +428,23 @@ Amazon Web Services (AWS) is a cloud computing platform. For this project, we us
 - **ElastiCache** - Redis caching service
 - **SES** - Email service for notifications
 
-**Key Concepts to Learn:**
-- AWS account setup and IAM
-- EC2 instances and networking
-- RDS database services
-- S3 storage and bucket management
-- ECR container registry
-- EKS Kubernetes service
-- CloudWatch monitoring
-- Cost management
+---
+
+## PHASE 1: AWS CLOUD BASICS (Week 3 - Month 1)
+
+**Duration:** 1 week  
+**Time:** 2-3 hours per day  
+**Goal:** Understand AWS fundamentals and core services
+
+### Key Concepts to Learn (Basic):
+- AWS account setup and free tier
+- AWS console navigation
+- IAM (Identity and Access Management) basics
+- EC2 instances (launch, connect, terminate)
+- S3 storage (create buckets, upload/download files)
+- Basic networking (VPC, subnets, security groups)
+- AWS CLI installation and basic commands
+- Cost management and billing basics
 
 ### Free Training Resources
 
@@ -338,15 +546,24 @@ Kubernetes (K8s) is a container orchestration platform. For this project, we use
 - Provide high availability and fault tolerance
 - Manage secrets and configuration
 
-**Key Concepts to Learn:**
-- Kubernetes architecture (pods, services, deployments)
-- Kubernetes objects (Deployments, Services, ConfigMaps, Secrets)
+---
+
+## PHASE 1: KUBERNETES BASICS (Week 4 - Month 1)
+
+**Duration:** 1 week  
+**Time:** 2-3 hours per day  
+**Goal:** Understand Kubernetes fundamentals and basic operations
+
+### Key Concepts to Learn (Basic):
+- What is Kubernetes and why use it
+- Kubernetes architecture (master/worker nodes)
+- Basic kubectl commands
 - Pods and containers
-- Services and networking
-- ConfigMaps and Secrets
-- Ingress and load balancing
-- Horizontal Pod Autoscaling (HPA)
-- Rolling updates and rollbacks
+- Deployments (create, scale, update)
+- Services (ClusterIP, NodePort, LoadBalancer)
+- ConfigMaps and Secrets (basic)
+- Namespaces
+- Basic troubleshooting
 
 ### Free Training Resources
 
@@ -474,36 +691,57 @@ Kubernetes (K8s) is a container orchestration platform. For this project, we use
 
 ## 6. Learning Schedule
 
-### Week 1-2: Docker
-- **Day 1-3:** Watch Docker tutorials (2-3 hours/day)
-- **Day 4-5:** Practice Docker commands
-- **Day 6-7:** Build Dockerfile for a simple app
-- **Day 8-10:** Learn Docker Compose
-- **Day 11-14:** Practice with Docker Compose projects
+### PHASE 1: BASIC LEARNING (Month 1)
 
-### Week 3: GitHub Actions
-- **Day 1-3:** Watch GitHub Actions tutorials (2-3 hours/day)
-- **Day 4-5:** Create simple CI workflows
-- **Day 6-7:** Practice with Docker build and push
-- **Day 8-10:** Create CD workflows
-- **Day 11-14:** Practice with real projects
+**Week 1: Docker Basics**
+- **Day 1-2:** Watch Docker basics tutorials (2-3 hours/day)
+- **Day 3-4:** Practice Docker commands and create simple containers
+- **Day 5-6:** Build Dockerfile for a simple app
+- **Day 7:** Practice with Docker Compose (single service)
 
-### Week 4-5: AWS Cloud
-- **Day 1-5:** Watch AWS tutorials (2-3 hours/day)
-- **Day 6-10:** Practice with AWS Free Tier
-- **Day 11-14:** Hands-on labs and projects
-- **Day 15-21:** Deep dive into RDS, S3, ECR, EKS
+**Week 2: GitHub Actions Basics**
+- **Day 1-2:** Watch GitHub Actions basics tutorials (2-3 hours/day)
+- **Day 3-4:** Create simple CI workflows (lint, test)
+- **Day 5-6:** Practice with workflow triggers and secrets
+- **Day 7:** Review and practice basic workflows
 
-### Week 6-7: Kubernetes
-- **Day 1-5:** Watch Kubernetes tutorials (2-3 hours/day)
-- **Day 6-10:** Practice with Minikube/Kind
-- **Day 11-14:** Create Deployments and Services
-- **Day 15-21:** Practice with EKS and production scenarios
+**Week 3: AWS Cloud Basics**
+- **Day 1-2:** Watch AWS basics tutorials (2-3 hours/day)
+- **Day 3-4:** Create AWS account, practice with EC2 and S3
+- **Day 5-6:** Learn IAM basics and AWS CLI
+- **Day 7:** Practice with AWS Free Tier services
 
-### Week 8: Integration & Practice
-- **Day 1-7:** Combine all technologies
-- **Day 8-14:** Build a complete CI/CD pipeline
-- **Day 15-21:** Deploy a sample application to AWS EKS
+**Week 4: Kubernetes Basics**
+- **Day 1-2:** Watch Kubernetes basics tutorials (2-3 hours/day)
+- **Day 3-4:** Set up Minikube/Kind, practice kubectl commands
+- **Day 5-6:** Create Pods, Deployments, and Services
+- **Day 7:** Practice with ConfigMaps and Secrets (basic)
+
+### PHASE 2: ADVANCED LEARNING (Month 2)
+
+**Week 1: Docker Advanced**
+- **Day 1-2:** Watch Docker advanced tutorials (2-3 hours/day)
+- **Day 3-4:** Create multi-stage Dockerfiles and optimize images
+- **Day 5-6:** Build complex Docker Compose applications
+- **Day 7:** Practice with Docker registry (ECR)
+
+**Week 2: GitHub Actions Advanced**
+- **Day 1-2:** Watch GitHub Actions advanced tutorials (2-3 hours/day)
+- **Day 3-4:** Create complete CI/CD pipelines (PR validation, dev deployment)
+- **Day 5-6:** Implement Docker build/push to ECR and K8s deployment
+- **Day 7:** Practice with semantic versioning and reusable workflows
+
+**Week 3: AWS Cloud Advanced**
+- **Day 1-2:** Watch AWS advanced tutorials (2-3 hours/day)
+- **Day 3-4:** Set up RDS, S3 advanced features, ECR
+- **Day 5-6:** Create EKS cluster and configure ElastiCache
+- **Day 7:** Set up CloudWatch monitoring and SES
+
+**Week 4: Kubernetes Advanced**
+- **Day 1-2:** Watch Kubernetes advanced tutorials (2-3 hours/day)
+- **Day 3-4:** Create production-ready deployments with health checks and HPA
+- **Day 5-6:** Deploy to EKS, set up Ingress, and configure monitoring
+- **Day 7:** Integration project - Deploy full application stack to EKS
 
 ---
 
