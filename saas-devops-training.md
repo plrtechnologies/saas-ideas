@@ -45,7 +45,136 @@ This training is divided into **two phases**, each lasting **1 month**:
 **Week 3:** AWS Cloud Advanced  
 **Week 4:** Kubernetes Advanced
 
-**Total Estimated Time:** 2 months (8 weeks) with 2-3 hours daily practice
+**Total Estimated Time:** 2 months (8 weeks) + 1-2 days introduction = ~2 months with 2-3 hours daily practice
+
+---
+
+## 0. DevOps Introduction
+
+### What is DevOps?
+
+**DevOps** is a combination of **Development** and **Operations**. It's a culture, philosophy, and set of practices that brings together software development (Dev) and IT operations (Ops) to shorten the software development lifecycle and provide continuous delivery with high quality.
+
+**Key Principles:**
+- **Automation** - Automate repetitive tasks (building, testing, deployment)
+- **Continuous Integration (CI)** - Automatically test and integrate code changes
+- **Continuous Deployment (CD)** - Automatically deploy code to production
+- **Infrastructure as Code (IaC)** - Manage infrastructure using code
+- **Monitoring & Logging** - Track application performance and issues
+- **Collaboration** - Better communication between development and operations teams
+
+**Why DevOps Matters:**
+- **Faster Delivery** - Deploy code changes quickly and frequently
+- **Better Quality** - Automated testing catches bugs early
+- **Improved Collaboration** - Dev and Ops teams work together
+- **Higher Reliability** - Automated deployments reduce human errors
+- **Scalability** - Easily scale applications up or down
+- **Cost Efficiency** - Optimize resource usage
+
+**DevOps Tools We'll Learn:**
+1. **Docker** - Containerization (package applications)
+2. **GitHub Actions** - CI/CD automation
+3. **AWS Cloud** - Cloud infrastructure
+4. **Kubernetes** - Container orchestration
+
+### Free Training Resources
+
+#### YouTube Tutorials (English & Telugu)
+
+**1. DevOps Tutorial for Beginners - Hitesh Choudhary (English)**
+- **Channel:** Hitesh Choudhary
+- **Search:** "Hitesh Choudhary DevOps tutorial beginners"
+- **Channel Link:** https://www.youtube.com/@HiteshChoudharydotcom
+- **Duration:** ~4 hours
+- **Description:** Complete DevOps introduction covering concepts, tools, and practices. Great starting point for beginners.
+
+**2. DevOps Complete Course - Kunal Kushwaha (English)**
+- **Channel:** Kunal Kushwaha
+- **Search:** "Kunal Kushwaha DevOps complete course"
+- **Channel Link:** https://www.youtube.com/@KunalKushwaha
+- **Duration:** ~8 hours
+- **Description:** Comprehensive DevOps course covering all concepts, tools, and real-world scenarios. Very detailed and practical.
+
+**3. DevOps Tutorial in Telugu - Naresh i Technologies**
+- **Channel:** Naresh i Technologies
+- **Search:** "Naresh i Technologies DevOps tutorial Telugu"
+- **Channel Link:** https://www.youtube.com/@NareshiTechnologies
+- **Duration:** ~3 hours
+- **Description:** DevOps introduction in Telugu covering basics, concepts, and tools. Perfect for Telugu speakers.
+
+**4. DevOps Explained - Telusko (English)**
+- **Channel:** Telusko
+- **Search:** "Telusko DevOps explained"
+- **Channel Link:** https://www.youtube.com/@Telusko
+- **Duration:** ~2 hours
+- **Description:** Beginner-friendly DevOps explanation with clear examples and analogies.
+
+**5. DevOps Tutorial in Telugu - Telugu TechTuts**
+- **Channel:** Telugu TechTuts
+- **Search:** "Telugu TechTuts DevOps tutorial"
+- **Channel Link:** Search for "Telugu TechTuts DevOps" on YouTube
+- **Duration:** ~3 hours
+- **Description:** Complete DevOps tutorial in Telugu covering concepts and tools.
+
+#### Official Documentation & Resources
+
+**DevOps Roadmap**
+- **URL:** https://roadmap.sh/devops
+- **Description:** Visual roadmap showing the DevOps learning path and required skills.
+
+**What is DevOps? - AWS**
+- **URL:** https://aws.amazon.com/devops/what-is-devops/
+- **Description:** AWS explanation of DevOps concepts and practices.
+
+**Atlassian DevOps Guide**
+- **URL:** https://www.atlassian.com/devops
+- **Description:** Comprehensive DevOps guide with articles, tutorials, and best practices.
+
+### Learning Goals
+
+By the end of this DevOps introduction, you should understand:
+
+**Basic Concepts:**
+- [ ] What DevOps is and why it's important
+- [ ] Difference between traditional development and DevOps
+- [ ] Key DevOps principles (automation, CI/CD, IaC)
+- [ ] DevOps lifecycle (plan, code, build, test, release, deploy, operate, monitor)
+- [ ] Common DevOps tools and their purposes
+
+**DevOps Culture:**
+- [ ] How DevOps improves collaboration
+- [ ] Benefits of automation
+- [ ] Importance of monitoring and feedback
+- [ ] Continuous improvement mindset
+
+**DevOps Tools Overview:**
+- [ ] Understanding of containerization (Docker)
+- [ ] Understanding of CI/CD (GitHub Actions)
+- [ ] Understanding of cloud platforms (AWS)
+- [ ] Understanding of orchestration (Kubernetes)
+
+**Next Steps:**
+- [ ] Ready to dive deep into Docker (Week 1)
+- [ ] Understand how all tools work together
+- [ ] See the big picture before learning individual tools
+
+### Recommended Learning Path
+
+**Before Starting Technical Training:**
+1. Watch 1-2 DevOps introduction videos (2-3 hours)
+2. Understand the DevOps lifecycle
+3. Learn about CI/CD concepts
+4. Understand why we use containers and orchestration
+5. Review the DevOps roadmap
+
+**Time Required:** 1-2 days (2-3 hours each day)
+
+**Why This Matters:**
+Understanding DevOps concepts first will help you:
+- See the bigger picture when learning individual tools
+- Understand how Docker, GitHub Actions, AWS, and Kubernetes work together
+- Make better decisions when implementing DevOps practices
+- Appreciate the value of automation and collaboration
 
 ---
 
@@ -690,6 +819,20 @@ Kubernetes (K8s) is a container orchestration platform. For this project, we use
 ---
 
 ## 6. Learning Schedule
+
+### PRE-TRAINING: DevOps Introduction (Before Month 1)
+
+**Duration:** 1-2 days  
+**Time:** 2-3 hours per day  
+**Goal:** Understand DevOps concepts and big picture
+
+- **Day 1:** Watch DevOps introduction videos (2-3 hours)
+- **Day 2:** Review DevOps roadmap and understand lifecycle (2-3 hours)
+
+**Why Start Here:**
+Understanding DevOps concepts first helps you see how all tools (Docker, GitHub Actions, AWS, Kubernetes) work together before diving into individual tools.
+
+---
 
 ### PHASE 1: BASIC LEARNING (Month 1)
 
