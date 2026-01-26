@@ -179,21 +179,37 @@ See **Section 7** for the detailed Multi-Tenancy Architecture diagram.
 
 ### 6.1 Frontend Application (React SPA)
 
+**Key Features:**
+- **Keycloak Integration** - Uses `keycloak-js` adapter for authentication
+- **Role-Based UI Routing** - Route guards control screen access based on JWT token roles
+- **Tenant Branding** - Dynamic logo, colors, and favicon loaded per tenant
+- **Token Management** - Auto-refresh tokens, include in API requests
+
 **Key UI Screens** (See [Section 12: UI Screens](#12-ui-screens) for mockups):
 - Login Page (with tenant branding)
-- Dashboard
+- Dashboard (role-based widgets)
 - Opinion Requests List
 - Opinion Request Detail
 - Document Upload
 - Document Viewer
 - Opinion Editor (with AI assist)
-- User Management
-- Tenant Settings (Admin)
+- User Management (firm_admin only)
+- Tenant Settings (firm_admin only)
 - Reports & Audit Logs
+
+**Access Control:** See [Section 8.5](#85-single-token-for-ui--api-access-control) for details on how the same JWT token controls both UI visibility and API access.
 
 ### 6.2 Backend API (Centralized, Multi-Tenant)
 
+**Key Features:**
+- **Keycloak Integration** - Uses `@nestjs/keycloak-connect` (NestJS) or `python-keycloak` (FastAPI) for token validation
+- **Role-Based API Guards** - Endpoints protected by role-based access control using JWT token claims
+- **Tenant Middleware** - Automatically extracts `tenant_id` from JWT and filters all queries
+- **Token Validation** - Validates JWT signature using Keycloak public keys (JWKS)
+
 The backend follows a modular structure with tenant middleware that automatically filters all data by `tenant_id`.
+
+**Access Control:** See [Section 8.5](#85-single-token-for-ui--api-access-control) for details on how the same JWT token controls both UI visibility and API access.
 
 ### 6.3 Tenant Middleware (Core Multi-Tenancy Logic)
 
@@ -371,6 +387,236 @@ async getOpinions(@Req() req) {
   return this.opinionService.findAll(tenantId);
 }
 ```
+
+### 8.5 Single Token for UI & API Access Control
+
+**Key Concept:** The same JWT token obtained from Keycloak (via auth code exchange) is used for **both frontend UI routing** and **backend API authorization**. This enables centralized role-based access control.
+
+#### Frontend Integration (UI Screen Visibility)
+
+The frontend uses the JWT token to:
+1. **Decode token** to extract user roles and permissions
+2. **Route Guards** - Control which screens/routes are accessible
+3. **Component Rendering** - Show/hide UI elements based on roles
+4. **API Calls** - Include token in Authorization header
+
+```typescript
+// Frontend: React Route Guard Example
+import { useKeycloak } from '@react-keycloak/web';
+
+const ProtectedRoute = ({ children, requiredRoles }) => {
+  const { keycloak, initialized } = useKeycloak();
+  
+  if (!initialized) return <Loading />;
+  
+  if (!keycloak.authenticated) {
+    keycloak.login();
+    return null;
+  }
+  
+  // Extract roles from token
+  const tokenParsed = keycloak.tokenParsed;
+  const userRoles = tokenParsed?.realm_access?.roles || [];
+  
+  // Check if user has required role
+  const hasAccess = requiredRoles.some(role => userRoles.includes(role));
+  
+  if (!hasAccess) {
+    return <AccessDenied />;
+  }
+  
+  return children;
+};
+
+// Usage in Routes
+<Route path="/opinions" element={
+  <ProtectedRoute requiredRoles={['panel_advocate', 'senior_advocate']}>
+    <OpinionEditor />
+  </ProtectedRoute>
+} />
+
+<Route path="/users" element={
+  <ProtectedRoute requiredRoles={['firm_admin']}>
+    <UserManagement />
+  </ProtectedRoute>
+} />
+```
+
+```typescript
+// Frontend: Conditional UI Rendering
+const Dashboard = () => {
+  const { keycloak } = useKeycloak();
+  const userRoles = keycloak.tokenParsed?.realm_access?.roles || [];
+  
+  return (
+    <div>
+      {userRoles.includes('panel_advocate') && (
+        <Card title="My Assigned Requests">
+          <OpinionRequestsList />
+        </Card>
+      )}
+      
+      {userRoles.includes('firm_admin') && (
+        <Card title="User Management">
+          <UserManagement />
+        </Card>
+      )}
+      
+      {userRoles.includes('firm_admin') && (
+        <Card title="Tenant Settings">
+          <TenantSettings />
+        </Card>
+      )}
+    </div>
+  );
+};
+```
+
+#### Backend Integration (API Authorization)
+
+The backend validates the same JWT token to:
+1. **Token Validation** - Verify signature and expiration
+2. **Role Extraction** - Extract roles from token claims
+3. **API Endpoint Guards** - Enforce access control per endpoint
+4. **Tenant Isolation** - Extract tenant_id for data filtering
+
+```typescript
+// Backend: NestJS Role-Based Guard
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { KeycloakService } from '@nestjs/keycloak-connect';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(
+    private reflector: Reflector,
+    private keycloakService: KeycloakService
+  ) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.get<string[]>(
+      'roles',
+      context.getHandler()
+    );
+    
+    if (!requiredRoles) {
+      return true; // No role requirement
+    }
+    
+    const request = context.switchToHttp().getRequest();
+    const user = request.user; // Set by AuthGuard after token validation
+    
+    // Extract roles from validated token
+    const userRoles = user.realm_access?.roles || [];
+    
+    // Check if user has at least one required role
+    return requiredRoles.some(role => userRoles.includes(role));
+  }
+}
+
+// Usage in Controllers
+@Controller('opinions')
+export class OpinionController {
+  
+  @Get()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('panel_advocate', 'senior_advocate', 'firm_admin')
+  async getOpinions(@Req() req) {
+    const tenantId = req.user.tenant_id; // From token
+    return this.opinionService.findAll(tenantId);
+  }
+  
+  @Post()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('panel_advocate', 'senior_advocate')
+  async createOpinion(@Req() req, @Body() dto: CreateOpinionDto) {
+    const tenantId = req.user.tenant_id;
+    const userId = req.user.sub;
+    return this.opinionService.create(tenantId, userId, dto);
+  }
+  
+  @Delete(':id')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('firm_admin', 'senior_advocate')
+  async deleteOpinion(@Req() req, @Param('id') id: string) {
+    const tenantId = req.user.tenant_id;
+    return this.opinionService.delete(tenantId, id);
+  }
+  
+  @Get('/users')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('firm_admin') // Only firm admin can access
+  async getUsers(@Req() req) {
+    const tenantId = req.user.tenant_id;
+    return this.userService.findAll(tenantId);
+  }
+}
+```
+
+#### Role-to-Permission Mapping
+
+| Role | UI Screens Accessible | API Endpoints Allowed |
+|------|----------------------|----------------------|
+| **firm_admin** | All screens (Dashboard, Users, Settings, Reports, Opinions) | All APIs (GET/POST/PUT/DELETE on all resources) |
+| **senior_advocate** | Dashboard, Opinion Requests, Opinion Editor, Reports | GET opinions, POST opinions, PUT opinions, GET reports |
+| **panel_advocate** | Dashboard, Opinion Requests, Opinion Editor | GET opinions, POST opinions (create only), GET documents |
+| **paralegal** | Dashboard, Opinion Requests (view only), Document Upload | GET opinion_requests, POST documents, GET documents |
+
+#### Token Refresh Flow
+
+Both frontend and backend handle token refresh:
+
+```typescript
+// Frontend: Auto token refresh
+keycloak.onTokenExpired = () => {
+  keycloak.updateToken(30) // Refresh if expires in 30 seconds
+    .then((refreshed) => {
+      if (refreshed) {
+        console.log('Token refreshed');
+        // Update axios interceptor with new token
+        axios.defaults.headers.common['Authorization'] = 
+          `Bearer ${keycloak.token}`;
+      }
+    })
+    .catch(() => {
+      // Refresh failed, redirect to login
+      keycloak.login();
+    });
+};
+```
+
+```typescript
+// Backend: Token validation with refresh token support
+@Injectable()
+export class AuthGuard implements CanActivate {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const token = this.extractTokenFromHeader(request);
+    
+    if (!token) {
+      throw new UnauthorizedException();
+    }
+    
+    try {
+      // Validate token with Keycloak public key
+      const payload = await this.keycloakService.validateToken(token);
+      request.user = payload; // Attach user info to request
+      return true;
+    } catch (error) {
+      // Token expired or invalid
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+  }
+}
+```
+
+#### Benefits of Single Token Approach
+
+1. **Consistency** - Same roles/permissions enforced on both UI and API
+2. **Security** - Backend always validates, even if frontend is compromised
+3. **Simplicity** - Single source of truth (Keycloak) for access control
+4. **Performance** - No additional permission checks needed, roles in token
+5. **Auditability** - All access decisions traceable via JWT claims
 
 ---
 
