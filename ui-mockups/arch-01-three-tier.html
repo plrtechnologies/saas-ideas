@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Tier Architecture - Legal Opinion SaaS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 40px;
+            color: #e0e0e0;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 40px;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        h1 span { color: #4fd1c5; font-weight: 600; }
+        
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .tier {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .tier-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .tier-badge {
+            background: linear-gradient(135deg, #4fd1c5, #38b2ac);
+            color: #1a1a2e;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        .tier-badge.tier-2 { background: linear-gradient(135deg, #9f7aea, #805ad5); }
+        .tier-badge.tier-3 { background: linear-gradient(135deg, #f6ad55, #ed8936); }
+        
+        .tier-title {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .components {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .component {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 200px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+        
+        .component:hover {
+            transform: translateY(-4px);
+            background: rgba(255,255,255,0.12);
+            border-color: #4fd1c5;
+        }
+        
+        .component-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #4fd1c5, #38b2ac);
+            border-radius: 12px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .component.tier-2 .component-icon { background: linear-gradient(135deg, #9f7aea, #805ad5); }
+        .component.tier-3 .component-icon { background: linear-gradient(135deg, #f6ad55, #ed8936); }
+        
+        .component-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        
+        .component-tech {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-bottom: 8px;
+        }
+        
+        .component-features {
+            font-size: 11px;
+            color: #718096;
+            text-align: left;
+            list-style: none;
+        }
+        
+        .component-features li {
+            padding: 2px 0;
+        }
+        
+        .component-features li::before {
+            content: "•";
+            color: #4fd1c5;
+            margin-right: 6px;
+        }
+        
+        .arrow-down {
+            text-align: center;
+            padding: 10px;
+            font-size: 24px;
+            color: #4fd1c5;
+        }
+        
+        .external-services {
+            margin-top: 30px;
+            background: rgba(79, 209, 197, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px dashed rgba(79, 209, 197, 0.3);
+        }
+        
+        .external-services .tier-badge {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+        }
+        
+        .legend {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 12px;
+            color: #a0aec0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Traditional <span>3-Tier Architecture</span></h1>
+        
+        <div class="architecture">
+            <!-- Tier 1: Presentation -->
+            <div class="tier">
+                <div class="tier-header">
+                    <span class="tier-badge">Tier 1</span>
+                    <span class="tier-title">Presentation Layer</span>
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-icon">⚛️</div>
+                        <div class="component-name">React SPA</div>
+                        <div class="component-tech">TypeScript + Ant Design</div>
+                        <ul class="component-features">
+                            <li>Law Firm Branding</li>
+                            <li>Responsive UI</li>
+                            <li>Keycloak JS Adapter</li>
+                        </ul>
+                    </div>
+                    <div class="component">
+                        <div class="component-icon">🌐</div>
+                        <div class="component-name">Nginx / CloudFront</div>
+                        <div class="component-tech">Static Hosting + CDN</div>
+                        <ul class="component-features">
+                            <li>SSL Termination</li>
+                            <li>Caching</li>
+                            <li>Gzip Compression</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow-down">▼ HTTPS / REST API ▼</div>
+            
+            <!-- Tier 2: Application -->
+            <div class="tier">
+                <div class="tier-header">
+                    <span class="tier-badge tier-2">Tier 2</span>
+                    <span class="tier-title">Application Layer (Business Logic)</span>
+                </div>
+                <div class="components">
+                    <div class="component tier-2">
+                        <div class="component-icon">🔐</div>
+                        <div class="component-name">Tenant Middleware</div>
+                        <div class="component-tech">Extract tenant_id</div>
+                        <ul class="component-features">
+                            <li>JWT Validation</li>
+                            <li>Tenant Context</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">👤</div>
+                        <div class="component-name">User Module</div>
+                        <div class="component-tech">NestJS / FastAPI</div>
+                        <ul class="component-features">
+                            <li>Authentication</li>
+                            <li>Authorization (RBAC)</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">📋</div>
+                        <div class="component-name">Opinion Module</div>
+                        <div class="component-tech">NestJS / FastAPI</div>
+                        <ul class="component-features">
+                            <li>Request Management</li>
+                            <li>Workflow Engine</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">📄</div>
+                        <div class="component-name">Document Module</div>
+                        <div class="component-tech">NestJS / FastAPI</div>
+                        <ul class="component-features">
+                            <li>Upload/Download</li>
+                            <li>OCR Processing</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">🤖</div>
+                        <div class="component-name">AI/LLM Module</div>
+                        <div class="component-tech">Pluggable LLM</div>
+                        <ul class="component-features">
+                            <li>Data Extraction</li>
+                            <li>Opinion Generation</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">📊</div>
+                        <div class="component-name">Audit Module</div>
+                        <div class="component-tech">Logging Service</div>
+                        <ul class="component-features">
+                            <li>Activity Tracking</li>
+                            <li>Compliance Logs</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow-down">▼ SQL / S3 API ▼</div>
+            
+            <!-- Tier 3: Data -->
+            <div class="tier">
+                <div class="tier-header">
+                    <span class="tier-badge tier-3">Tier 3</span>
+                    <span class="tier-title">Data Layer</span>
+                </div>
+                <div class="components">
+                    <div class="component tier-3">
+                        <div class="component-icon">🐘</div>
+                        <div class="component-name">PostgreSQL</div>
+                        <div class="component-tech">AWS RDS</div>
+                        <ul class="component-features">
+                            <li>Central Database</li>
+                            <li>tenant_id in all tables</li>
+                            <li>Row Level Security</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-3">
+                        <div class="component-icon">📦</div>
+                        <div class="component-name">Amazon S3</div>
+                        <div class="component-tech">Object Storage</div>
+                        <ul class="component-features">
+                            <li>Document Storage</li>
+                            <li>Tenant Folders</li>
+                            <li>Branding Assets</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-3">
+                        <div class="component-icon">⚡</div>
+                        <div class="component-name">Redis</div>
+                        <div class="component-tech">ElastiCache</div>
+                        <ul class="component-features">
+                            <li>Session Cache</li>
+                            <li>API Response Cache</li>
+                            <li>Rate Limiting</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- External Services -->
+            <div class="external-services">
+                <div class="tier-header">
+                    <span class="tier-badge">External</span>
+                    <span class="tier-title">External Services</span>
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-icon" style="background: linear-gradient(135deg, #48bb78, #38a169);">🔑</div>
+                        <div class="component-name">Keycloak</div>
+                        <div class="component-tech">Identity Provider</div>
+                        <ul class="component-features">
+                            <li>SSO / MFA</li>
+                            <li>User Management</li>
+                        </ul>
+                    </div>
+                    <div class="component">
+                        <div class="component-icon" style="background: linear-gradient(135deg, #48bb78, #38a169);">🧠</div>
+                        <div class="component-name">LLM API</div>
+                        <div class="component-tech">GPT-4 / Claude / Gemini</div>
+                        <ul class="component-features">
+                            <li>Document Extraction</li>
+                            <li>Opinion Generation</li>
+                        </ul>
+                    </div>
+                    <div class="component">
+                        <div class="component-icon" style="background: linear-gradient(135deg, #48bb78, #38a169);">📧</div>
+                        <div class="component-name">Email Service</div>
+                        <div class="component-tech">AWS SES</div>
+                        <ul class="component-features">
+                            <li>Notifications</li>
+                            <li>Alerts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #4fd1c5, #38b2ac);"></div>
+                <span>Presentation</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #9f7aea, #805ad5);"></div>
+                <span>Business Logic</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #f6ad55, #ed8936);"></div>
+                <span>Data Layer</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #48bb78, #38a169);"></div>
+                <span>External Services</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

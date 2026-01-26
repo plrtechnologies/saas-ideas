@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Integration Architecture - Legal Opinion SaaS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 40px;
+            color: #e0e0e0;
+        }
+        .container { max-width: 1300px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        h1 span { color: #e94560; font-weight: 600; }
+        .subtitle {
+            text-align: center;
+            color: #a0aec0;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+        
+        .pipeline-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .section-badge {
+            background: linear-gradient(135deg, #e94560, #c23a54);
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        .section-badge.generation {
+            background: linear-gradient(135deg, #4fd1c5, #38b2ac);
+        }
+        
+        .section-name {
+            font-size: 18px;
+            color: #fff;
+        }
+        
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .step {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            min-width: 180px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .step:hover {
+            transform: translateY(-4px);
+            border-color: #e94560;
+        }
+        
+        .step.generation:hover {
+            border-color: #4fd1c5;
+        }
+        
+        .step-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #e94560, #c23a54);
+            border-radius: 14px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .step.generation .step-icon {
+            background: linear-gradient(135deg, #4fd1c5, #38b2ac);
+        }
+        
+        .step-name {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        
+        .step-tech {
+            font-size: 11px;
+            color: #e94560;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .step.generation .step-tech {
+            color: #4fd1c5;
+        }
+        
+        .step-desc {
+            font-size: 11px;
+            color: #718096;
+        }
+        
+        .arrow {
+            color: #e94560;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .arrow.generation {
+            color: #4fd1c5;
+        }
+        
+        /* LLM Providers */
+        .llm-providers {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .providers-title {
+            text-align: center;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .providers-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .provider {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px 30px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .provider:hover {
+            border-color: #e94560;
+            transform: scale(1.05);
+        }
+        
+        .provider.active {
+            border-color: #4fd1c5;
+            background: rgba(79, 209, 197, 0.1);
+        }
+        
+        .provider-logo {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        
+        .provider-name {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .provider-model {
+            font-size: 11px;
+            color: #a0aec0;
+        }
+        
+        /* Config Box */
+        .config-section {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .config-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .config-title {
+            color: #e94560;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        
+        .config-code {
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            color: #a0aec0;
+        }
+        
+        .code-key { color: #e94560; }
+        .code-value { color: #4fd1c5; }
+        .code-comment { color: #718096; }
+        
+        /* Prompt Templates */
+        .prompt-example {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(194, 58, 84, 0.05));
+            border: 1px solid rgba(233, 69, 96, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .prompt-title {
+            color: #e94560;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .prompt-text {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 12px;
+            color: #a0aec0;
+            line-height: 1.6;
+        }
+        
+        .prompt-var {
+            background: rgba(79, 209, 197, 0.2);
+            color: #4fd1c5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LLM Integration <span>Architecture</span></h1>
+        <p class="subtitle">Pluggable AI/LLM Provider • Document Extraction • Opinion Generation</p>
+        
+        <!-- Document Extraction Pipeline -->
+        <div class="pipeline-section">
+            <div class="section-title">
+                <span class="section-badge">Pipeline 1</span>
+                <span class="section-name">Document Data Extraction</span>
+            </div>
+            <div class="pipeline">
+                <div class="step">
+                    <div class="step-icon">📄</div>
+                    <div class="step-name">Document Upload</div>
+                    <div class="step-tech">S3 Storage</div>
+                    <div class="step-desc">PDF, JPEG, PNG files</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step">
+                    <div class="step-icon">👁️</div>
+                    <div class="step-name">OCR Processing</div>
+                    <div class="step-tech">Tesseract / Textract</div>
+                    <div class="step-desc">Text extraction from images</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step">
+                    <div class="step-icon">🧠</div>
+                    <div class="step-name">LLM Extraction</div>
+                    <div class="step-tech">GPT-4 / Claude / Gemini</div>
+                    <div class="step-desc">Structured data extraction</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step">
+                    <div class="step-icon">📊</div>
+                    <div class="step-name">Structured JSON</div>
+                    <div class="step-tech">PostgreSQL</div>
+                    <div class="step-desc">Names, dates, amounts</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Opinion Generation Pipeline -->
+        <div class="pipeline-section">
+            <div class="section-title">
+                <span class="section-badge generation">Pipeline 2</span>
+                <span class="section-name">Legal Opinion Generation</span>
+            </div>
+            <div class="pipeline">
+                <div class="step generation">
+                    <div class="step-icon">📊</div>
+                    <div class="step-name">Extracted Data</div>
+                    <div class="step-tech">From Pipeline 1</div>
+                    <div class="step-desc">Property, parties, docs</div>
+                </div>
+                <div class="arrow generation">→</div>
+                <div class="step generation">
+                    <div class="step-icon">📝</div>
+                    <div class="step-name">Template + Prompt</div>
+                    <div class="step-tech">Legal Templates</div>
+                    <div class="step-desc">Opinion format, clauses</div>
+                </div>
+                <div class="arrow generation">→</div>
+                <div class="step generation">
+                    <div class="step-icon">🧠</div>
+                    <div class="step-name">LLM Generation</div>
+                    <div class="step-tech">GPT-4 / Claude / Gemini</div>
+                    <div class="step-desc">Draft opinion creation</div>
+                </div>
+                <div class="arrow generation">→</div>
+                <div class="step generation">
+                    <div class="step-icon">👨‍⚖️</div>
+                    <div class="step-name">Lawyer Review</div>
+                    <div class="step-tech">Human in Loop</div>
+                    <div class="step-desc">Edit, approve, sign</div>
+                </div>
+                <div class="arrow generation">→</div>
+                <div class="step generation">
+                    <div class="step-icon">✅</div>
+                    <div class="step-name">Final Opinion</div>
+                    <div class="step-tech">PDF Export</div>
+                    <div class="step-desc">Signed legal opinion</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- LLM Providers -->
+        <div class="llm-providers">
+            <div class="providers-title">🔌 Pluggable LLM Providers (Configurable per Tenant)</div>
+            <div class="providers-grid">
+                <div class="provider active">
+                    <div class="provider-logo">🤖</div>
+                    <div class="provider-name">OpenAI</div>
+                    <div class="provider-model">GPT-4 / GPT-4o</div>
+                </div>
+                <div class="provider">
+                    <div class="provider-logo">🧠</div>
+                    <div class="provider-name">Anthropic</div>
+                    <div class="provider-model">Claude 3.5 Sonnet</div>
+                </div>
+                <div class="provider">
+                    <div class="provider-logo">💎</div>
+                    <div class="provider-name">Google</div>
+                    <div class="provider-model">Gemini Pro / Ultra</div>
+                </div>
+                <div class="provider">
+                    <div class="provider-logo">🏢</div>
+                    <div class="provider-name">Azure OpenAI</div>
+                    <div class="provider-model">GPT-4 (Enterprise)</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Config Section -->
+        <div class="config-section">
+            <div class="config-box">
+                <div class="config-title">Environment Configuration</div>
+                <div class="config-code">
+                    <span class="code-comment"># LLM Provider Selection</span><br>
+                    <span class="code-key">LLM_PROVIDER</span>=<span class="code-value">"openai"</span><br>
+                    <span class="code-key">LLM_MODEL</span>=<span class="code-value">"gpt-4"</span><br>
+                    <span class="code-key">LLM_API_KEY</span>=<span class="code-value">"sk-..."</span><br><br>
+                    <span class="code-comment"># Fallback Provider</span><br>
+                    <span class="code-key">LLM_FALLBACK_PROVIDER</span>=<span class="code-value">"anthropic"</span>
+                </div>
+            </div>
+            <div class="config-box">
+                <div class="config-title">Tenant Override (DB)</div>
+                <div class="config-code">
+                    <span class="code-comment">-- tenant_settings table</span><br>
+                    <span class="code-key">llm_provider</span>: <span class="code-value">'anthropic'</span><br>
+                    <span class="code-key">llm_model</span>: <span class="code-value">'claude-3-sonnet'</span><br>
+                    <span class="code-key">llm_api_key_ref</span>: <span class="code-value">'secrets/claude'</span><br>
+                    <span class="code-key">max_tokens</span>: <span class="code-value">4096</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Prompt Example -->
+        <div class="prompt-example">
+            <div class="prompt-title">📝 Sample Extraction Prompt</div>
+            <div class="prompt-text">
+                Extract the following information from this legal document and return as JSON:<br><br>
+                - Property address and survey number<br>
+                - Names of all parties (buyer, seller, mortgagor)<br>
+                - Registration date and document number<br>
+                - Property area and valuation<br>
+                - Encumbrances if any<br><br>
+                Document text: <span class="prompt-var">{{ocr_text}}</span><br>
+                Document type: <span class="prompt-var">{{doc_type}}</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

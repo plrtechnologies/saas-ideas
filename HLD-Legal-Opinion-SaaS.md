@@ -35,7 +35,7 @@ This document outlines the High-Level Design for a **Legal Opinion SaaS Platform
 ### Key Objectives
 - Provide a secure, multi-tenant SaaS platform for multiple **law firms**
 - Enable document upload, review, and legal opinion generation workflow
-- **AI-powered document extraction and opinion generation using OpenAI APIs**
+- **AI-powered document extraction and opinion generation using LLM APIs (OpenAI/Anthropic/Google)**
 - Maintain audit trails and historical records for compliance
 - Ensure data isolation and security across **law firm tenants**
 - **Portable architecture**: Run on VM during development, scale on Kubernetes in production
@@ -55,7 +55,7 @@ Law firms that serve as panel advocates for banks need to verify loan applicatio
 ### 2.2 Solution Overview
 A SaaS platform for **law firms** that:
 - Digitizes the document submission and review process
-- **AI-powered document content extraction** using OCR and OpenAI GPT models
+- **AI-powered document content extraction** using OCR and LLM models
 - **LLM-assisted opinion generation** using extracted data and templates
 - Standardizes opinion generation with configurable templates
 - Provides real-time tracking and dashboards
@@ -65,7 +65,7 @@ A SaaS platform for **law firms** that:
 - **Supports white-labeling** with law firm-specific branding
 
 ### 2.3 AI/LLM Integration Overview
-The platform leverages **OpenAI APIs** for:
+The platform leverages **LLM APIs** (configurable - OpenAI GPT-4, Anthropic Claude, Google Gemini) for:
 1. **Document Intelligence**: Extract structured data from uploaded documents (property details, parties, dates, amounts)
 2. **Opinion Generation**: Generate draft legal opinions by combining extracted data with predefined templates
 3. **Content Validation**: Identify discrepancies and flag potential issues in documents
@@ -76,13 +76,13 @@ The platform leverages **OpenAI APIs** for:
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │   ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
-│   │ Document │───►│  OCR/Text    │───►│  OpenAI GPT  │───►│  Structured  │ │
+│   │ Document │───►│  OCR/Text    │───►│     LLM      │───►│  Structured  │ │
 │   │  Upload  │    │  Extraction  │    │  Extraction  │    │    Data      │ │
 │   └──────────┘    └──────────────┘    └──────────────┘    └──────┬───────┘ │
 │                                                                   │         │
 │                                                                   ▼         │
 │   ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
-│   │  Final   │◄───│   Lawyer     │◄───│  OpenAI GPT  │◄───│  Template +  │ │
+│   │  Final   │◄───│   Lawyer     │◄───│     LLM      │◄───│  Template +  │ │
 │   │ Opinion  │    │   Review     │    │  Generation  │    │  Raw Data    │ │
 │   └──────────┘    └──────────────┘    └──────────────┘    └──────────────┘ │
 │                                                                              │
@@ -206,6 +206,8 @@ Law Firm Clerk/Paralegal          Panel Advocate                    System
 
 ### 5.1 Traditional 3-Tier Architecture
 
+![3-Tier Architecture](ui-mockups/arch-01-three-tier.png?v=3)
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        TRADITIONAL 3-TIER ARCHITECTURE                       │
@@ -244,7 +246,7 @@ Law Firm Clerk/Paralegal          Panel Advocate                    System
 │   │   │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │ ││
 │   │   │   │   Opinion   │  │   AI/LLM    │  │    Audit    │             │ ││
 │   │   │   │   Module    │  │   Module    │  │   Module    │             │ ││
-│   │   │   │             │  │  (OpenAI)   │  │             │             │ ││
+│   │   │   │             │  │    (LLM)    │  │             │             │ ││
 │   │   │   └─────────────┘  └─────────────┘  └─────────────┘             │ ││
 │   │   │                                                                   │ ││
 │   │   │   • Single deployment, multi-tenant via tenant_id                │ ││
@@ -278,11 +280,12 @@ Law Firm Clerk/Paralegal          Panel Advocate                    System
    EXTERNAL SERVICES
    ┌────────────────────────────────────────────────────────────────────────┐
    │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                 │
-   │  │   Keycloak   │  │   OpenAI     │  │   SMTP       │                 │
-   │  │   (Auth)     │  │   API        │  │   (Email)    │                 │
+   │  │   Keycloak   │  │   LLM API    │  │   SMTP       │                 │
+   │  │   (Auth)     │  │  (Pluggable) │  │   (Email)    │                 │
    │  │              │  │              │  │              │                 │
    │  │ • User auth  │  │ • GPT-4      │  │ • AWS SES    │                 │
-   │  │ • SSO        │  │ • Extraction │  │ • SendGrid   │                 │
+   │  │ • SSO        │  │ • Claude     │  │ • SendGrid   │                 │
+   │  │ • MFA        │  │ • Gemini     │  │              │                 │
    │  │ • MFA        │  │ • Generation │  │              │                 │
    │  └──────────────┘  └──────────────┘  └──────────────┘                 │
    └────────────────────────────────────────────────────────────────────────┘
@@ -330,7 +333,7 @@ Law Firm Clerk/Paralegal          Panel Advocate                    System
 │   │   │   ├── AWS RDS PostgreSQL      (managed)                         │  ││
 │   │   │   ├── AWS S3                  (document storage)                │  ││
 │   │   │   ├── AWS ElastiCache Redis   (caching)                         │  ││
-│   │   │   └── OpenAI API              (AI processing)                   │  ││
+│   │   │   └── LLM API                 (AI processing)                   │  ││
 │   │   │                                                                  │  ││
 │   │   └─────────────────────────────────────────────────────────────────┘  ││
 │   │                                                                         ││
@@ -350,7 +353,7 @@ Law Firm Clerk/Paralegal          Panel Advocate                    System
 | **Cache** | Redis (AWS ElastiCache or self-hosted) | Session, API caching |
 | **Document Storage** | Amazon S3 | Documents, PDFs (tenant folders) |
 | **Authentication** | Keycloak | SSO, MFA, user management |
-| **AI/LLM** | OpenAI API (GPT-4) | Document extraction, opinion generation |
+| **AI/LLM** | LLM API (GPT-4/Claude/Gemini) | Document extraction, opinion generation |
 | **OCR** | Tesseract / AWS Textract | Text extraction from images |
 | **Email** | AWS SES / SendGrid | Notifications |
 | **Container Runtime** | Docker | Containerization |
@@ -416,8 +419,8 @@ Law Firm Clerk/Paralegal          Panel Advocate                    System
 **Key UI Screens** (See [Section 12: UI Screens](#12-ui-screens) for mockups):
 - Login Page (with tenant branding)
 - Dashboard
-- Loan Requests List
-- Loan Request Detail
+- Opinion Requests List
+- Opinion Request Detail
 - Document Upload
 - Document Viewer
 - Opinion Editor (with AI assist)
@@ -459,10 +462,10 @@ Law Firm Clerk/Paralegal          Panel Advocate                    System
 │  │   │   ├── user.service.ts                                    │
 │  │   │   └── user.entity.ts          # tenant_id column         │
 │  │   │                                                           │
-│  │   ├── loan-request/                                           │
-│  │   │   ├── loan-request.controller.ts                         │
-│  │   │   ├── loan-request.service.ts                            │
-│  │   │   └── loan-request.entity.ts  # tenant_id column         │
+│  │   ├── opinion-request/                                           │
+│  │   │   ├── opinion-request.controller.ts                         │
+│  │   │   ├── opinion-request.service.ts                            │
+│  │   │   └── opinion-request.entity.ts  # tenant_id column         │
 │  │   │                                                           │
 │  │   ├── document/                                               │
 │  │   │   ├── document.controller.ts                             │
@@ -478,7 +481,7 @@ Law Firm Clerk/Paralegal          Panel Advocate                    System
 │  │   ├── ai/                                                     │
 │  │   │   ├── ai.controller.ts        # AI endpoints             │
 │  │   │   ├── ai.service.ts                                      │
-│  │   │   ├── openai.service.ts       # OpenAI API calls         │
+│  │   │   ├── llm.service.ts          # LLM API calls (pluggable)│
 │  │   │   └── extraction.entity.ts    # tenant_id column         │
 │  │   │                                                           │
 │  │   └── audit/                                                  │
@@ -531,6 +534,8 @@ REQUEST FLOW WITH TENANT RESOLUTION
 ## 7. Multi-Tenancy Strategy
 
 ### 7.1 Tenant Isolation Model
+
+![Multi-Tenancy Architecture](ui-mockups/arch-02-multi-tenancy.png?v=3)
 
 **Approach: Shared Database, Shared Schema with tenant_id Column**
 
@@ -591,7 +596,7 @@ REQUEST FLOW WITH TENANT RESOLUTION
 │   │   PostgreSQL Database                                                  ││
 │   │   ┌───────────────────────────────────────────────────────────────┐   ││
 │   │   │                                                                │   ││
-│   │   │   loan_requests table                                          │   ││
+│   │   │   opinion_requests table                                          │   ││
 │   │   │   ┌──────────┬──────────┬──────────┬──────────┬─────────┐    │   ││
 │   │   │   │tenant_id │client_id │ id       │borrower  │ status  │    │   ││
 │   │   │   │(Law Firm)│ (Bank)   │          │          │         │    │   ││
@@ -602,7 +607,7 @@ REQUEST FLOW WITH TENANT RESOLUTION
 │   │   │   └──────────┴──────────┴──────────┴──────────┴─────────┘    │   ││
 │   │   │                                                                │   ││
 │   │   │   Row Level Security (RLS):                                   │   ││
-│   │   │   CREATE POLICY tenant_isolation ON loan_requests             │   ││
+│   │   │   CREATE POLICY tenant_isolation ON opinion_requests             │   ││
 │   │   │     USING (tenant_id = current_setting('app.current_tenant')) │   ││
 │   │   │                                                                │   ││
 │   │   └───────────────────────────────────────────────────────────────┘   ││
@@ -720,6 +725,8 @@ Body: {
 ## 8. Authentication with Keycloak
 
 ### 8.1 Keycloak Architecture
+
+![Authentication Flow with Keycloak](ui-mockups/arch-05-auth-flow.png?v=3)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -1027,8 +1034,8 @@ CREATE TABLE bank_clients (
     UNIQUE(tenant_id, code)
 );
 
--- Loan Requests Table
-CREATE TABLE loan_requests (
+-- Opinion Requests Table
+CREATE TABLE opinion_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id),    -- Law Firm
     client_id UUID NOT NULL REFERENCES bank_clients(id), -- Bank Client
@@ -1053,7 +1060,7 @@ CREATE TABLE loan_requests (
 CREATE TABLE documents (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id),
-    loan_request_id UUID NOT NULL REFERENCES loan_requests(id),
+    loan_request_id UUID NOT NULL REFERENCES opinion_requests(id),
     document_type VARCHAR(50) NOT NULL,
     original_filename VARCHAR(255) NOT NULL,
     s3_key VARCHAR(500) NOT NULL,
@@ -1071,7 +1078,7 @@ CREATE TABLE documents (
 CREATE TABLE legal_opinions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id),
-    loan_request_id UUID NOT NULL REFERENCES loan_requests(id),
+    loan_request_id UUID NOT NULL REFERENCES opinion_requests(id),
     template_id UUID REFERENCES opinion_templates(id),
     opinion_number VARCHAR(50) NOT NULL,
     version INT DEFAULT 1,
@@ -1111,21 +1118,21 @@ CREATE TABLE audit_logs (
 
 -- Indexes
 CREATE INDEX idx_users_tenant ON users(tenant_id);
-CREATE INDEX idx_loan_requests_tenant ON loan_requests(tenant_id);
-CREATE INDEX idx_loan_requests_status ON loan_requests(tenant_id, status);
+CREATE INDEX idx_opinion_requests_tenant ON opinion_requests(tenant_id);
+CREATE INDEX idx_opinion_requests_status ON opinion_requests(tenant_id, status);
 CREATE INDEX idx_documents_request ON documents(loan_request_id);
 CREATE INDEX idx_opinions_request ON legal_opinions(loan_request_id);
 CREATE INDEX idx_audit_logs_tenant ON audit_logs(tenant_id, created_at DESC);
 
 -- Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE loan_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE opinion_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE legal_opinions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY tenant_isolation ON users
     USING (tenant_id = current_setting('app.current_tenant')::uuid);
-CREATE POLICY tenant_isolation ON loan_requests
+CREATE POLICY tenant_isolation ON opinion_requests
     USING (tenant_id = current_setting('app.current_tenant')::uuid);
 CREATE POLICY tenant_isolation ON documents
     USING (tenant_id = current_setting('app.current_tenant')::uuid);
@@ -1137,19 +1144,21 @@ CREATE POLICY tenant_isolation ON legal_opinions
 
 ## 10. AI/LLM Integration
 
-### 10.1 OpenAI Integration Architecture
+### 10.1 LLM Integration Architecture (Pluggable)
+
+![LLM Integration Architecture](ui-mockups/arch-03-llm-integration.png?v=3)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        OpenAI INTEGRATION                                    │
+│                     LLM INTEGRATION (PLUGGABLE)                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │   DOCUMENT EXTRACTION PIPELINE                                              │
 │   ┌────────────────────────────────────────────────────────────────────────┐│
 │   │                                                                         ││
 │   │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐       ││
-│   │   │ Document │───►│  OCR     │───►│ OpenAI   │───►│ Structured│       ││
-│   │   │  (S3)    │    │(Tesseract│    │  GPT-4   │    │   JSON    │       ││
+│   │   │ Document │───►│  OCR     │───►│   LLM    │───►│ Structured│       ││
+│   │   │  (S3)    │    │(Tesseract│    │(GPT/Claude│   │   JSON    │       ││
 │   │   │          │    │/Textract)│    │          │    │           │       ││
 │   │   └──────────┘    └──────────┘    └──────────┘    └──────────┘       ││
 │   │                                                                         ││
@@ -1169,8 +1178,8 @@ CREATE POLICY tenant_isolation ON legal_opinions
 │   ┌────────────────────────────────────────────────────────────────────────┐│
 │   │                                                                         ││
 │   │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐       ││
-│   │   │ Extracted│    │ Template │    │ OpenAI   │    │   Draft  │       ││
-│   │   │   Data   │+   │ Prompt   │───►│  GPT-4   │───►│  Opinion │       ││
+│   │   │ Extracted│    │ Template │    │   LLM    │    │   Draft  │       ││
+│   │   │   Data   │+   │ Prompt   │───►│(GPT/Claude│───►│  Opinion │       ││
 │   │   │          │    │          │    │          │    │          │       ││
 │   │   └──────────┘    └──────────┘    └──────────┘    └──────────┘       ││
 │   │                                                                         ││
@@ -1348,6 +1357,8 @@ volumes:
 
 ### 11.2 Production Environment (Kubernetes + AWS)
 
+![Deployment Architecture](ui-mockups/arch-04-deployment.png?v=3)
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    PRODUCTION INFRASTRUCTURE (AWS)                           │
@@ -1412,7 +1423,7 @@ volumes:
 │   └────────────────────────────────────────────────────────────────────────┘│
 │                                                                              │
 │   External Services:                                                        │
-│   • OpenAI API (api.openai.com)                                            │
+│   • LLM API (OpenAI/Anthropic/Google - configurable)                       │
 │   • AWS SES (Email)                                                         │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -1433,7 +1444,7 @@ The following UI screens are required for the application. Mock HTML files and s
 
 Tenant-branded login page with Keycloak SSO integration. Branding (logo, colors) loaded from tenant config.
 
-![Login Page](ui-mockups/01-login.png?v=2)
+![Login Page](ui-mockups/01-login.png?v=3)
 
 ---
 
@@ -1442,25 +1453,25 @@ Tenant-branded login page with Keycloak SSO integration. Branding (logo, colors)
 
 Overview with key metrics, pending tasks, and recent activity.
 
-![Dashboard](ui-mockups/02-dashboard.png?v=2)
+![Dashboard](ui-mockups/02-dashboard.png?v=3)
 
 ---
 
-#### 12.1.3 Loan Requests List
-**File:** [ui-mockups/03-loan-requests.html](ui-mockups/03-loan-requests.html)
+#### 12.1.3 Opinion Requests List
+**File:** [ui-mockups/03-opinion-requests.html](ui-mockups/03-opinion-requests.html)
 
 List of all loan requests with search, filters (status, loan type, priority), and pagination.
 
-![Loan Requests List](ui-mockups/03-loan-requests.png?v=2)
+![Opinion Requests List](ui-mockups/03-opinion-requests.png?v=3)
 
 ---
 
-#### 12.1.4 Loan Request Detail
-**File:** [ui-mockups/04-loan-request-detail.html](ui-mockups/04-loan-request-detail.html)
+#### 12.1.4 Opinion Request Detail
+**File:** [ui-mockups/04-opinion-request-detail.html](ui-mockups/04-opinion-request-detail.html)
 
 Single request view with borrower details, documents list, quick actions, and activity timeline.
 
-![Loan Request Detail](ui-mockups/04-loan-request-detail.png?v=2)
+![Opinion Request Detail](ui-mockups/04-opinion-request-detail.png?v=3)
 
 ---
 
@@ -1469,7 +1480,7 @@ Single request view with borrower details, documents list, quick actions, and ac
 
 Drag-drop document upload with category selection and AI processing status.
 
-![Document Upload](ui-mockups/05-document-upload.png?v=2)
+![Document Upload](ui-mockups/05-document-upload.png?v=3)
 
 ---
 
@@ -1478,7 +1489,7 @@ Drag-drop document upload with category selection and AI processing status.
 
 View document with AI-extracted data panel showing property details, party information, and confidence scores.
 
-![Document Viewer](ui-mockups/06-document-viewer.png?v=2)
+![Document Viewer](ui-mockups/06-document-viewer.png?v=3)
 
 ---
 
@@ -1487,7 +1498,7 @@ View document with AI-extracted data panel showing property details, party infor
 
 Create/edit legal opinion with AI assistance. Features document summary, rich text editor, and AI suggestions.
 
-![Opinion Editor](ui-mockups/07-opinion-editor.png?v=2)
+![Opinion Editor](ui-mockups/07-opinion-editor.png?v=3)
 
 ---
 
@@ -1496,7 +1507,7 @@ Create/edit legal opinion with AI assistance. Features document summary, rich te
 
 Admin screen for user CRUD operations with role management.
 
-![User Management](ui-mockups/08-user-management.png?v=2)
+![User Management](ui-mockups/08-user-management.png?v=3)
 
 ---
 
@@ -1505,7 +1516,7 @@ Admin screen for user CRUD operations with role management.
 
 Admin screen for tenant branding (logo, colors), organization info, and feature settings.
 
-![Tenant Settings](ui-mockups/09-tenant-settings.png?v=2)
+![Tenant Settings](ui-mockups/09-tenant-settings.png?v=3)
 
 ---
 
@@ -1514,7 +1525,7 @@ Admin screen for tenant branding (logo, colors), organization info, and feature 
 
 Analytics dashboard with charts, recent opinions table, and activity feed.
 
-![Reports & Analytics](ui-mockups/10-reports.png?v=2)
+![Reports & Analytics](ui-mockups/10-reports.png?v=3)
 
 ---
 
@@ -1591,7 +1602,7 @@ jobs:
           cd frontend
           npm ci
           npm run test
-
+      
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -1605,7 +1616,7 @@ jobs:
           aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REGISTRY
           docker push $ECR_REGISTRY/backend:${{ github.sha }}
           docker push $ECR_REGISTRY/frontend:${{ github.sha }}
-
+        
   deploy-dev:
     needs: build
     if: github.ref == 'refs/heads/develop'
@@ -1615,7 +1626,7 @@ jobs:
         run: |
           kubectl set image deployment/backend backend=$ECR_REGISTRY/backend:${{ github.sha }}
           kubectl set image deployment/frontend frontend=$ECR_REGISTRY/frontend:${{ github.sha }}
-
+        
   deploy-prod:
     needs: build
     if: github.ref == 'refs/heads/main'
@@ -1658,7 +1669,7 @@ jobs:
 | **CloudFront** | 500GB transfer | $50 |
 | **ALB** | 1 ALB | $25 |
 | **Keycloak EC2** | t3.medium | $35 |
-| **OpenAI API** | ~100K requests | $200-400 |
+| **LLM API** | ~100K requests | $200-500 |
 | **SES** | 50K emails | $5 |
 | **TOTAL** | | **~$900-1,100/month** |
 
@@ -1670,7 +1681,7 @@ jobs:
 |------|--------|------------|
 | Data breach | High | Encryption, WAF, regular audits |
 | Multi-tenant data leakage | High | RLS, code reviews, pen testing |
-| OpenAI API downtime | Medium | Fallback to manual, caching |
+| LLM API downtime | Medium | Fallback provider, manual mode, caching |
 | Cost overrun (AI) | Medium | Token limits, monitoring |
 | Keycloak single point of failure | Medium | HA deployment, backups |
 
@@ -1686,13 +1697,13 @@ POST   /auth/realms/legal-opinion-saas/protocol/openid-connect/token
 # Tenant Config (Public)
 GET    /api/v1/tenants/config?code={code}
 
-# Loan Requests
-GET    /api/v1/loan-requests
-POST   /api/v1/loan-requests
-GET    /api/v1/loan-requests/{id}
-PUT    /api/v1/loan-requests/{id}
-PATCH  /api/v1/loan-requests/{id}/status
-PATCH  /api/v1/loan-requests/{id}/assign
+# Opinion Requests
+GET    /api/v1/opinion-requests
+POST   /api/v1/opinion-requests
+GET    /api/v1/opinion-requests/{id}
+PUT    /api/v1/opinion-requests/{id}
+PATCH  /api/v1/opinion-requests/{id}/status
+PATCH  /api/v1/opinion-requests/{id}/assign
 
 # Documents
 POST   /api/v1/documents/upload
@@ -1733,7 +1744,7 @@ GET    /api/v1/reports/audit-logs
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | Jan 2026 | Solution Architect | Initial draft |
-| 2.0 | Jan 2026 | Solution Architect | Traditional 3-tier, Keycloak, OpenAI, UI mockups |
+| 2.0 | Jan 2026 | Solution Architect | Traditional 3-tier, Keycloak, LLM API, UI mockups |
 
 ---
 
