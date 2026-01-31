@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Orders - MiniERP</title>
+    <style>
+        :root {
+            --primary-color: #27ae60;
+            --bg-color: #f3f4f6;
+            --sidebar-bg: #1e293b;
+            --card-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 14px; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--primary-color); }
+        .nav-icon { width: 20px; height: 20px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .content-area { padding: 32px; flex: 1; overflow-y: auto; }
+        
+        .filters-bar { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+        .search-box { flex: 1; min-width: 250px; position: relative; }
+        .search-box input { width: 100%; padding: 10px 16px 10px 40px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
+        .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .filter-select { padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; background: white; min-width: 150px; }
+        
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
+        th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; }
+        td { font-size: 14px; color: var(--text-primary); }
+        tr:hover { background: #f9fafb; }
+        
+        .job-number { font-weight: 600; color: var(--primary-color); }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-draft { background: #f3e8ff; color: #7c3aed; }
+        .badge-released { background: #dbeafe; color: #1e40af; }
+        .badge-in-progress { background: #fef3c7; color: #92400e; }
+        .badge-ready { background: #dcfce7; color: #166534; }
+        .badge-dispatched { background: #e0e7ff; color: #4338ca; }
+        .badge-closed { background: #e5e7eb; color: #374151; }
+        
+        .customer-info { display: flex; flex-direction: column; }
+        .customer-name { font-weight: 500; }
+        .customer-id { font-size: 12px; color: var(--text-secondary); }
+        
+        .progress-bar { width: 100px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary-color); }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btn { padding: 6px 12px; font-size: 13px; border-radius: 6px; background: var(--bg-color); color: var(--text-primary); border: none; cursor: pointer; }
+        .action-btn:hover { background: #e5e7eb; }
+        .action-btn.primary { background: var(--primary-color); color: white; }
+        
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--border-color); }
+        .pagination-info { font-size: 14px; color: var(--text-secondary); }
+        .pagination-btns { display: flex; gap: 8px; }
+        .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 8px; background: white; cursor: pointer; font-size: 14px; }
+        .page-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">RAGHAVA ENGG</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="06-job-orders.html" class="nav-item active">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Job Orders
+            </a>
+            <a href="03-items.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                Inventory
+            </a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <h1 class="page-title">Job Orders</h1>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline">Export</button>
+                <button class="btn btn-primary">+ New Job Order</button>
+            </div>
+        </header>
+        
+        <div class="content-area">
+            <div class="filters-bar">
+                <div class="search-box">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" placeholder="Search by job number, customer...">
+                </div>
+                <select class="filter-select">
+                    <option>All Status</option>
+                    <option>DRAFT</option>
+                    <option>RELEASED</option>
+                    <option>IN_PROGRESS</option>
+                    <option>READY</option>
+                    <option>DISPATCHED</option>
+                    <option>CLOSED</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Customers</option>
+                    <option>ABC Industries</option>
+                    <option>XYZ Corp</option>
+                    <option>Tech Solutions</option>
+                </select>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Job Number</th>
+                            <th>Customer</th>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>Progress</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="job-number">WO-2024-001</span></td>
+                            <td>
+                                <div class="customer-info">
+                                    <span class="customer-name">ABC Industries</span>
+                                    <span class="customer-id">CUST-001</span>
+                                </div>
+                            </td>
+                            <td>Drill Bit Assembly (100 pcs)</td>
+                            <td>20/100</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 20%"></div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-in-progress">IN_PROGRESS</span></td>
+                            <td>Feb 15, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="07-job-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="job-number">WO-2024-002</span></td>
+                            <td>
+                                <div class="customer-info">
+                                    <span class="customer-name">Mining Co.</span>
+                                    <span class="customer-id">CUST-002</span>
+                                </div>
+                            </td>
+                            <td>Steel Fabrication (50 units)</td>
+                            <td>50/50</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 100%"></div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-ready">READY</span></td>
+                            <td>Jan 30, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="07-job-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="job-number">WO-2024-003</span></td>
+                            <td>
+                                <div class="customer-info">
+                                    <span class="customer-name">XYZ Corp</span>
+                                    <span class="customer-id">CUST-003</span>
+                                </div>
+                            </td>
+                            <td>Custom Brackets (200 pcs)</td>
+                            <td>0/200</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 0%"></div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-released">RELEASED</span></td>
+                            <td>Mar 1, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="07-job-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="job-number">WO-2024-004</span></td>
+                            <td>
+                                <div class="customer-info">
+                                    <span class="customer-name">Tech Solutions</span>
+                                    <span class="customer-id">CUST-004</span>
+                                </div>
+                            </td>
+                            <td>Precision Components (75 pcs)</td>
+                            <td>75/75</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 100%"></div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-dispatched">DISPATCHED</span></td>
+                            <td>Jan 25, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="07-job-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="job-number">WO-2024-005</span></td>
+                            <td>
+                                <div class="customer-info">
+                                    <span class="customer-name">ABC Industries</span>
+                                    <span class="customer-id">CUST-001</span>
+                                </div>
+                            </td>
+                            <td>Welding Work (30 units)</td>
+                            <td>15/30</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 50%"></div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-in-progress">IN_PROGRESS</span></td>
+                            <td>Feb 20, 2026</td>
+                            <td>
+                                <div class="action-btns">
+                                    <a href="07-job-detail.html" class="action-btn primary">View</a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <span class="pagination-info">Showing 1 to 5 of 24 job orders</span>
+                    <div class="pagination-btns">
+                        <button class="page-btn">«</button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <button class="page-btn">...</button>
+                        <button class="page-btn">5</button>
+                        <button class="page-btn">»</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker - MiniERP</title>
+    <style>
+        :root {
+            --primary-color: #27ae60;
+            --bg-color: #f3f4f6;
+            --sidebar-bg: #1e293b;
+            --card-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 14px; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--primary-color); }
+        .nav-icon { width: 20px; height: 20px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: #229954; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-outline:hover { background: var(--bg-color); }
+        .content-area { padding: 32px; flex: 1; overflow-y: auto; }
+        
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px; }
+        .stat-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .stat-icon.red { background: #fee2e2; color: #dc2626; }
+        .stat-icon.blue { background: #dbeafe; color: #2563eb; }
+        .stat-icon.yellow { background: #fef3c7; color: #d97706; }
+        .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+        .stat-value { font-size: 32px; font-weight: 700; color: var(--text-primary); }
+        .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+        .stat-change { font-size: 13px; margin-top: 8px; }
+        .stat-change.positive { color: #16a34a; }
+        .stat-change.negative { color: #dc2626; }
+        
+        .filters-bar { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+        .search-box { flex: 1; min-width: 250px; position: relative; }
+        .search-box input { width: 100%; padding: 10px 16px 10px 40px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
+        .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .filter-select { padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; background: white; min-width: 150px; }
+        
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
+        th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; }
+        td { font-size: 14px; color: var(--text-primary); }
+        tr:hover { background: #f9fafb; }
+        
+        .expense-date { font-weight: 500; }
+        .expense-category { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .expense-category.raw-materials { background: #fee2e2; color: #991b1b; }
+        .expense-category.labor { background: #dbeafe; color: #1e40af; }
+        .expense-category.utilities { background: #fef3c7; color: #92400e; }
+        .expense-category.maintenance { background: #dcfce7; color: #166534; }
+        .expense-category.transport { background: #e0e7ff; color: #4338ca; }
+        .expense-category.other { background: #e5e7eb; color: #374151; }
+        
+        .expense-amount { font-weight: 600; color: #dc2626; }
+        .expense-description { color: var(--text-secondary); max-width: 300px; }
+        
+        .vendor-info { display: flex; flex-direction: column; }
+        .vendor-name { font-weight: 500; }
+        .vendor-id { font-size: 12px; color: var(--text-secondary); }
+        
+        .payment-status { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .payment-status.paid { background: #dcfce7; color: #166534; }
+        .payment-status.pending { background: #fef3c7; color: #92400e; }
+        .payment-status.overdue { background: #fee2e2; color: #991b1b; }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btn { padding: 6px 12px; font-size: 13px; border-radius: 6px; background: var(--bg-color); color: var(--text-primary); border: none; cursor: pointer; }
+        .action-btn:hover { background: #e5e7eb; }
+        .action-btn.edit { background: var(--primary-color); color: white; }
+        .action-btn.delete { background: #fee2e2; color: #dc2626; }
+        .action-btn.delete:hover { background: #fecaca; }
+        
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--border-color); }
+        .pagination-info { font-size: 14px; color: var(--text-secondary); }
+        .pagination-btns { display: flex; gap: 8px; }
+        .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 8px; background: white; cursor: pointer; font-size: 14px; }
+        .page-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">RAGHAVA ENGG</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="06-job-orders.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Job Orders
+            </a>
+            <a href="10-invoices.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Invoices
+            </a>
+            <a href="09-expense-tracker.html" class="nav-item active">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                Expenses
+            </a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <h1 class="page-title">Expense Tracker</h1>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline">Export</button>
+                <button class="btn btn-primary" onclick="alert('Add Expense')">+ Add Expense</button>
+            </div>
+        </header>
+        
+        <div class="content-area">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon red">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">₹2.45L</div>
+                    <div class="stat-label">Total Expenses (This Month)</div>
+                    <div class="stat-change negative">↑ 12% vs last month</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon blue">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">127</div>
+                    <div class="stat-label">Total Entries</div>
+                    <div class="stat-change positive">↑ 8 new this week</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon yellow">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">₹45K</div>
+                    <div class="stat-label">Pending Payments</div>
+                    <div class="stat-change negative">3 overdue</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon purple">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">₹1.2L</div>
+                    <div class="stat-label">Avg Monthly Expense</div>
+                    <div class="stat-change positive">↓ 5% vs last quarter</div>
+                </div>
+            </div>
+            
+            <div class="filters-bar">
+                <div class="search-box">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" placeholder="Search by description, vendor, category...">
+                </div>
+                <select class="filter-select">
+                    <option>All Categories</option>
+                    <option>Raw Materials</option>
+                    <option>Labor</option>
+                    <option>Utilities</option>
+                    <option>Maintenance</option>
+                    <option>Transport</option>
+                    <option>Other</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Payment Status</option>
+                    <option>Paid</option>
+                    <option>Pending</option>
+                    <option>Overdue</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Months</option>
+                    <option>December 2024</option>
+                    <option>November 2024</option>
+                    <option>October 2024</option>
+                </select>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Vendor</th>
+                            <th>Amount</th>
+                            <th>Payment Status</th>
+                            <th>Entered By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="expense-date">Dec 28, 2024</span></td>
+                            <td><span class="expense-category raw-materials">Raw Materials</span></td>
+                            <td><div class="expense-description">Steel sheets purchase for WO-2024-001</div></td>
+                            <td>
+                                <div class="vendor-info">
+                                    <span class="vendor-name">Steel Suppliers Ltd.</span>
+                                    <span class="vendor-id">VEND-001</span>
+                                </div>
+                            </td>
+                            <td><span class="expense-amount">₹45,000</span></td>
+                            <td><span class="payment-status paid">Paid</span></td>
+                            <td>Rajesh Kumar</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit expense')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete expense')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="expense-date">Dec 27, 2024</span></td>
+                            <td><span class="expense-category labor">Labor</span></td>
+                            <td><div class="expense-description">Overtime payment for production team</div></td>
+                            <td>
+                                <div class="vendor-info">
+                                    <span class="vendor-name">Internal - Payroll</span>
+                                    <span class="vendor-id">-</span>
+                                </div>
+                            </td>
+                            <td><span class="expense-amount">₹28,500</span></td>
+                            <td><span class="payment-status paid">Paid</span></td>
+                            <td>Priya Sharma</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit expense')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete expense')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="expense-date">Dec 26, 2024</span></td>
+                            <td><span class="expense-category utilities">Utilities</span></td>
+                            <td><div class="expense-description">Electricity bill - December 2024</div></td>
+                            <td>
+                                <div class="vendor-info">
+                                    <span class="vendor-name">State Electricity Board</span>
+                                    <span class="vendor-id">VEND-002</span>
+                                </div>
+                            </td>
+                            <td><span class="expense-amount">₹18,750</span></td>
+                            <td><span class="payment-status pending">Pending</span></td>
+                            <td>Amit Mehta</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit expense')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete expense')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="expense-date">Dec 25, 2024</span></td>
+                            <td><span class="expense-category maintenance">Maintenance</span></td>
+                            <td><div class="expense-description">Machine repair and servicing</div></td>
+                            <td>
+                                <div class="vendor-info">
+                                    <span class="vendor-name">Tech Maintenance Co.</span>
+                                    <span class="vendor-id">VEND-003</span>
+                                </div>
+                            </td>
+                            <td><span class="expense-amount">₹32,000</span></td>
+                            <td><span class="payment-status paid">Paid</span></td>
+                            <td>Sunil Kulkarni</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit expense')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete expense')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="expense-date">Dec 24, 2024</span></td>
+                            <td><span class="expense-category transport">Transport</span></td>
+                            <td><div class="expense-description">Freight charges for material delivery</div></td>
+                            <td>
+                                <div class="vendor-info">
+                                    <span class="vendor-name">Fast Logistics</span>
+                                    <span class="vendor-id">VEND-004</span>
+                                </div>
+                            </td>
+                            <td><span class="expense-amount">₹12,500</span></td>
+                            <td><span class="payment-status overdue">Overdue</span></td>
+                            <td>Rajesh Kumar</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit expense')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete expense')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="expense-date">Dec 23, 2024</span></td>
+                            <td><span class="expense-category raw-materials">Raw Materials</span></td>
+                            <td><div class="expense-description">Welding rods and consumables</div></td>
+                            <td>
+                                <div class="vendor-info">
+                                    <span class="vendor-name">Industrial Supplies</span>
+                                    <span class="vendor-id">VEND-005</span>
+                                </div>
+                            </td>
+                            <td><span class="expense-amount">₹15,800</span></td>
+                            <td><span class="payment-status paid">Paid</span></td>
+                            <td>Priya Sharma</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit expense')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete expense')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="expense-date">Dec 22, 2024</span></td>
+                            <td><span class="expense-category other">Other</span></td>
+                            <td><div class="expense-description">Office supplies and stationery</div></td>
+                            <td>
+                                <div class="vendor-info">
+                                    <span class="vendor-name">Stationery Mart</span>
+                                    <span class="vendor-id">VEND-006</span>
+                                </div>
+                            </td>
+                            <td><span class="expense-amount">₹3,200</span></td>
+                            <td><span class="payment-status paid">Paid</span></td>
+                            <td>Amit Mehta</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit expense')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete expense')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="expense-date">Dec 21, 2024</span></td>
+                            <td><span class="expense-category utilities">Utilities</span></td>
+                            <td><div class="expense-description">Internet and phone bills</div></td>
+                            <td>
+                                <div class="vendor-info">
+                                    <span class="vendor-name">Telecom Provider</span>
+                                    <span class="vendor-id">VEND-007</span>
+                                </div>
+                            </td>
+                            <td><span class="expense-amount">₹4,500</span></td>
+                            <td><span class="payment-status paid">Paid</span></td>
+                            <td>Sunil Kulkarni</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit expense')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete expense')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <span class="pagination-info">Showing 1 to 8 of 127 expenses</span>
+                    <div class="pagination-btns">
+                        <button class="page-btn">«</button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <button class="page-btn">...</button>
+                        <button class="page-btn">16</button>
+                        <button class="page-btn">»</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consumer Orders - MiniERP</title>
+    <style>
+        :root {
+            --primary-color: #27ae60;
+            --bg-color: #f3f4f6;
+            --sidebar-bg: #1e293b;
+            --card-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 14px; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--primary-color); }
+        .nav-icon { width: 20px; height: 20px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .content-area { padding: 32px; flex: 1; overflow-y: auto; }
+        
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px; }
+        .stat-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .stat-icon.blue { background: #dbeafe; color: #2563eb; }
+        .stat-icon.green { background: #dcfce7; color: #16a34a; }
+        .stat-icon.yellow { background: #fef3c7; color: #d97706; }
+        .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+        .stat-value { font-size: 32px; font-weight: 700; color: var(--text-primary); }
+        .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+        
+        .filters-bar { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+        .search-box { flex: 1; min-width: 250px; position: relative; }
+        .search-box input { width: 100%; padding: 10px 16px 10px 40px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
+        .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .filter-select { padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; background: white; min-width: 150px; }
+        
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
+        th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; }
+        td { font-size: 14px; color: var(--text-primary); }
+        tr:hover { background: #f9fafb; }
+        
+        .consumer-info { display: flex; flex-direction: column; }
+        .consumer-name { font-weight: 500; color: var(--primary-color); cursor: pointer; }
+        .consumer-name:hover { text-decoration: underline; }
+        .consumer-id { font-size: 12px; color: var(--text-secondary); }
+        
+        .order-number { font-weight: 600; color: var(--primary-color); }
+        
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-active { background: #dbeafe; color: #1e40af; }
+        .badge-ready { background: #dcfce7; color: #166534; }
+        .badge-dispatched { background: #e0e7ff; color: #4338ca; }
+        .badge-overdue { background: #fee2e2; color: #991b1b; }
+        
+        .editable-field { display: inline-flex; align-items: center; gap: 8px; }
+        .editable-value { padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        .editable-value:hover { background: var(--bg-color); }
+        .edit-input { width: 80px; padding: 4px 8px; border: 1px solid var(--primary-color); border-radius: 4px; font-size: 14px; }
+        .edit-date-input { width: 140px; padding: 4px 8px; border: 1px solid var(--primary-color); border-radius: 4px; font-size: 14px; }
+        .edit-actions { display: flex; gap: 4px; }
+        .edit-btn { padding: 4px 8px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; }
+        .edit-btn.save { background: var(--primary-color); color: white; }
+        .edit-btn.cancel { background: var(--bg-color); color: var(--text-primary); }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btn { padding: 6px 12px; font-size: 13px; border-radius: 6px; background: var(--bg-color); color: var(--text-primary); border: none; cursor: pointer; }
+        .action-btn:hover { background: #e5e7eb; }
+        .action-btn.primary { background: var(--primary-color); color: white; }
+        
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--border-color); }
+        .pagination-info { font-size: 14px; color: var(--text-secondary); }
+        .pagination-btns { display: flex; gap: 8px; }
+        .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 8px; background: white; cursor: pointer; font-size: 14px; }
+        .page-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        
+        .due-date { display: flex; align-items: center; gap: 6px; }
+        .due-date.overdue { color: #dc2626; font-weight: 500; }
+        .due-date.warning { color: #d97706; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">RAGHAVA ENGG</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="06-job-orders.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Job Orders
+            </a>
+            <a href="03-consumer-orders.html" class="nav-item active">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                Consumer Orders
+            </a>
+            <a href="05-stock-movements.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                Stock Movements
+            </a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <h1 class="page-title">Consumer Orders</h1>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline">Export</button>
+                <button class="btn btn-primary">+ New Order</button>
+            </div>
+        </header>
+        
+        <div class="content-area">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon blue">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">24</div>
+                    <div class="stat-label">Active Orders</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon yellow">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">Ready for Dispatch</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon green">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">Dispatched</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon purple">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Overdue</div>
+                </div>
+            </div>
+            
+            <div class="filters-bar">
+                <div class="search-box">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" placeholder="Search by consumer name, order number...">
+                </div>
+                <select class="filter-select">
+                    <option>All Status</option>
+                    <option>Active</option>
+                    <option>Ready for Dispatch</option>
+                    <option>Dispatched</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Consumers</option>
+                    <option>ABC Industries</option>
+                    <option>XYZ Corp</option>
+                    <option>Tech Solutions</option>
+                </select>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order Number</th>
+                            <th>Consumer</th>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="order-number">ORD-2024-001</span></td>
+                            <td>
+                                <div class="consumer-info">
+                                    <span class="consumer-name" onclick="alert('Navigate to consumer edit')">ABC Industries</span>
+                                    <span class="consumer-id">CUST-001</span>
+                                </div>
+                            </td>
+                            <td>Drill Bit Assembly</td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value" onclick="this.style.display='none'; this.nextElementSibling.style.display='flex'">100 pcs</span>
+                                    <div style="display: none; align-items: center; gap: 4px;">
+                                        <input type="number" class="edit-input" value="100" min="1">
+                                        <span>pcs</span>
+                                        <div class="edit-actions">
+                                            <button class="edit-btn save" onclick="this.closest('tr').querySelector('.editable-value').textContent=this.closest('div').previousElementSibling.previousElementSibling.value+' pcs'; this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✓</button>
+                                            <button class="edit-btn cancel" onclick="this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-active">Active</span></td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value due-date" onclick="this.style.display='none'; this.nextElementSibling.style.display='flex'">Feb 15, 2026</span>
+                                    <div style="display: none; align-items: center; gap: 4px;">
+                                        <input type="date" class="edit-date-input" value="2026-02-15">
+                                        <div class="edit-actions">
+                                            <button class="edit-btn save" onclick="const date=new Date(this.closest('div').previousElementSibling.value); this.closest('tr').querySelector('.editable-value').textContent=date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✓</button>
+                                            <button class="edit-btn cancel" onclick="this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn primary" onclick="alert('Edit order')">Edit</button>
+                                    <button class="action-btn" onclick="alert('Navigate to consumer')">View Consumer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="order-number">ORD-2024-002</span></td>
+                            <td>
+                                <div class="consumer-info">
+                                    <span class="consumer-name" onclick="alert('Navigate to consumer edit')">Mining Co.</span>
+                                    <span class="consumer-id">CUST-002</span>
+                                </div>
+                            </td>
+                            <td>Steel Fabrication</td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value" onclick="this.style.display='none'; this.nextElementSibling.style.display='flex'">50 units</span>
+                                    <div style="display: none; align-items: center; gap: 4px;">
+                                        <input type="number" class="edit-input" value="50" min="1">
+                                        <span>units</span>
+                                        <div class="edit-actions">
+                                            <button class="edit-btn save" onclick="this.closest('tr').querySelector('.editable-value').textContent=this.closest('div').previousElementSibling.previousElementSibling.value+' units'; this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✓</button>
+                                            <button class="edit-btn cancel" onclick="this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-ready">Ready</span></td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value due-date" onclick="this.style.display='none'; this.nextElementSibling.style.display='flex'">Jan 30, 2026</span>
+                                    <div style="display: none; align-items: center; gap: 4px;">
+                                        <input type="date" class="edit-date-input" value="2026-01-30">
+                                        <div class="edit-actions">
+                                            <button class="edit-btn save" onclick="const date=new Date(this.closest('div').previousElementSibling.value); this.closest('tr').querySelector('.editable-value').textContent=date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✓</button>
+                                            <button class="edit-btn cancel" onclick="this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn primary" onclick="alert('Edit order')">Edit</button>
+                                    <button class="action-btn" onclick="alert('Navigate to consumer')">View Consumer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="order-number">ORD-2024-003</span></td>
+                            <td>
+                                <div class="consumer-info">
+                                    <span class="consumer-name" onclick="alert('Navigate to consumer edit')">XYZ Corp</span>
+                                    <span class="consumer-id">CUST-003</span>
+                                </div>
+                            </td>
+                            <td>Custom Brackets</td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value" onclick="this.style.display='none'; this.nextElementSibling.style.display='flex'">200 pcs</span>
+                                    <div style="display: none; align-items: center; gap: 4px;">
+                                        <input type="number" class="edit-input" value="200" min="1">
+                                        <span>pcs</span>
+                                        <div class="edit-actions">
+                                            <button class="edit-btn save" onclick="this.closest('tr').querySelector('.editable-value').textContent=this.closest('div').previousElementSibling.previousElementSibling.value+' pcs'; this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✓</button>
+                                            <button class="edit-btn cancel" onclick="this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-active">Active</span></td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value due-date overdue" onclick="this.style.display='none'; this.nextElementSibling.style.display='flex'">Jan 25, 2026</span>
+                                    <div style="display: none; align-items: center; gap: 4px;">
+                                        <input type="date" class="edit-date-input" value="2026-01-25">
+                                        <div class="edit-actions">
+                                            <button class="edit-btn save" onclick="const date=new Date(this.closest('div').previousElementSibling.value); this.closest('tr').querySelector('.editable-value').textContent=date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✓</button>
+                                            <button class="edit-btn cancel" onclick="this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn primary" onclick="alert('Edit order')">Edit</button>
+                                    <button class="action-btn" onclick="alert('Navigate to consumer')">View Consumer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="order-number">ORD-2024-004</span></td>
+                            <td>
+                                <div class="consumer-info">
+                                    <span class="consumer-name" onclick="alert('Navigate to consumer edit')">Tech Solutions</span>
+                                    <span class="consumer-id">CUST-004</span>
+                                </div>
+                            </td>
+                            <td>Precision Components</td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value">75 pcs</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-dispatched">Dispatched</span></td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value due-date">Jan 25, 2026</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn" onclick="alert('View order')">View</button>
+                                    <button class="action-btn" onclick="alert('Navigate to consumer')">View Consumer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="order-number">ORD-2024-005</span></td>
+                            <td>
+                                <div class="consumer-info">
+                                    <span class="consumer-name" onclick="alert('Navigate to consumer edit')">ABC Industries</span>
+                                    <span class="consumer-id">CUST-001</span>
+                                </div>
+                            </td>
+                            <td>Welding Work</td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value" onclick="this.style.display='none'; this.nextElementSibling.style.display='flex'">30 units</span>
+                                    <div style="display: none; align-items: center; gap: 4px;">
+                                        <input type="number" class="edit-input" value="30" min="1">
+                                        <span>units</span>
+                                        <div class="edit-actions">
+                                            <button class="edit-btn save" onclick="this.closest('tr').querySelector('.editable-value').textContent=this.closest('div').previousElementSibling.previousElementSibling.value+' units'; this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✓</button>
+                                            <button class="edit-btn cancel" onclick="this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-active">Active</span></td>
+                            <td>
+                                <div class="editable-field">
+                                    <span class="editable-value due-date warning" onclick="this.style.display='none'; this.nextElementSibling.style.display='flex'">Feb 20, 2026</span>
+                                    <div style="display: none; align-items: center; gap: 4px;">
+                                        <input type="date" class="edit-date-input" value="2026-02-20">
+                                        <div class="edit-actions">
+                                            <button class="edit-btn save" onclick="const date=new Date(this.closest('div').previousElementSibling.value); this.closest('tr').querySelector('.editable-value').textContent=date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✓</button>
+                                            <button class="edit-btn cancel" onclick="this.closest('.editable-field').querySelector('span').style.display='inline'; this.closest('div').style.display='none'">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn primary" onclick="alert('Edit order')">Edit</button>
+                                    <button class="action-btn" onclick="alert('Navigate to consumer')">View Consumer</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <span class="pagination-info">Showing 1 to 5 of 24 orders</span>
+                    <div class="pagination-btns">
+                        <button class="page-btn">«</button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <button class="page-btn">...</button>
+                        <button class="page-btn">5</button>
+                        <button class="page-btn">»</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

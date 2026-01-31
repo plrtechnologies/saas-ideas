@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrap Details - MiniERP</title>
+    <style>
+        :root {
+            --primary-color: #27ae60;
+            --bg-color: #f3f4f6;
+            --sidebar-bg: #1e293b;
+            --card-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 14px; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--primary-color); }
+        .nav-icon { width: 20px; height: 20px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: #229954; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-outline:hover { background: var(--bg-color); }
+        .content-area { padding: 32px; flex: 1; overflow-y: auto; }
+        
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px; }
+        .stat-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .stat-icon.blue { background: #dbeafe; color: #2563eb; }
+        .stat-icon.green { background: #dcfce7; color: #16a34a; }
+        .stat-icon.yellow { background: #fef3c7; color: #d97706; }
+        .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+        .stat-value { font-size: 32px; font-weight: 700; color: var(--text-primary); }
+        .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+        .stat-change { font-size: 13px; margin-top: 8px; }
+        .stat-change.positive { color: #16a34a; }
+        .stat-change.negative { color: #dc2626; }
+        
+        /* Dashboard Grid */
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .card-body { padding: 24px; }
+        
+        /* Chart Container */
+        .chart-container { height: 300px; position: relative; }
+        .chart-placeholder { height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #f0f7ff 0%, white 100%); border-radius: 8px; }
+        
+        /* Line Chart */
+        .line-chart { height: 250px; position: relative; padding: 20px; }
+        .chart-axis { position: absolute; }
+        .chart-y-axis { left: 20px; top: 0; bottom: 40px; width: 40px; border-right: 2px solid var(--border-color); }
+        .chart-x-axis { bottom: 20px; left: 60px; right: 20px; height: 20px; border-top: 2px solid var(--border-color); }
+        .chart-line { position: absolute; left: 60px; right: 20px; top: 20px; bottom: 40px; }
+        .chart-line-path { fill: none; stroke: var(--primary-color); stroke-width: 3; }
+        .chart-point { position: absolute; width: 8px; height: 8px; background: var(--primary-color); border-radius: 50%; border: 2px solid white; transform: translate(-50%, -50%); }
+        .chart-label { position: absolute; font-size: 11px; color: var(--text-secondary); }
+        .chart-label.x { bottom: -20px; transform: translateX(-50%); }
+        .chart-label.y { left: -50px; transform: translateY(-50%); }
+        
+        /* Pricing Table */
+        .pricing-table { width: 100%; border-collapse: collapse; }
+        .pricing-table th, .pricing-table td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        .pricing-table th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; }
+        .pricing-table tr:hover { background: #f9fafb; }
+        .scrap-type { font-weight: 500; color: var(--text-primary); }
+        .price-value { color: var(--primary-color); font-weight: 600; }
+        
+        .filters-bar { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+        .search-box { flex: 1; min-width: 250px; position: relative; }
+        .search-box input { width: 100%; padding: 10px 16px 10px 40px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
+        .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .filter-select { padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; background: white; min-width: 150px; }
+        
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
+        th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; }
+        td { font-size: 14px; color: var(--text-primary); }
+        tr:hover { background: #f9fafb; }
+        
+        .job-number { font-weight: 600; color: var(--primary-color); }
+        .scrap-quantity { font-weight: 500; }
+        .scrap-value { color: var(--primary-color); font-weight: 600; }
+        
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-steel { background: #fee2e2; color: #991b1b; }
+        .badge-aluminum { background: #dbeafe; color: #1e40af; }
+        .badge-plastic { background: #fef3c7; color: #92400e; }
+        .badge-other { background: #e5e7eb; color: #374151; }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btn { padding: 6px 12px; font-size: 13px; border-radius: 6px; background: var(--bg-color); color: var(--text-primary); border: none; cursor: pointer; }
+        .action-btn:hover { background: #e5e7eb; }
+        .action-btn.view { background: var(--primary-color); color: white; }
+        
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--border-color); }
+        .pagination-info { font-size: 14px; color: var(--text-secondary); }
+        .pagination-btns { display: flex; gap: 8px; }
+        .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 8px; background: white; cursor: pointer; font-size: 14px; }
+        .page-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        
+        .history-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+        .history-item:last-child { border-bottom: none; }
+        .history-icon { width: 40px; height: 40px; background: #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary-color); }
+        .history-info { flex: 1; }
+        .history-title { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+        .history-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        .history-amount { font-size: 16px; font-weight: 600; color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">RAGHAVA ENGG</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="06-job-orders.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Job Orders
+            </a>
+            <a href="08-scrap-details.html" class="nav-item active">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Scrap Details
+            </a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <h1 class="page-title">Scrap Details</h1>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline">Export</button>
+                <button class="btn btn-primary" onclick="alert('Add Scrap Entry')">+ Add Scrap Entry</button>
+            </div>
+        </header>
+        
+        <div class="content-area">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon blue">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">12.5</div>
+                    <div class="stat-label">Total Scrap (Tons)</div>
+                    <div class="stat-change positive">↑ 2.3 tons this month</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon green">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">₹8.75L</div>
+                    <div class="stat-label">Total Value</div>
+                    <div class="stat-change positive">↑ ₹1.2L this month</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon yellow">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">24</div>
+                    <div class="stat-label">Scrap Entries</div>
+                    <div class="stat-change positive">↑ 4 new this week</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon purple">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">₹70/kg</div>
+                    <div class="stat-label">Avg Price/Kg</div>
+                    <div class="stat-change positive">↑ ₹5/kg vs last month</div>
+                </div>
+            </div>
+            
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Scrap Submission Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Scrap Submission History (Tons)</h2>
+                        <select class="filter-select" style="min-width: 120px; padding: 6px 12px;">
+                            <option>Last 6 Months</option>
+                            <option>Last 3 Months</option>
+                            <option>Last Year</option>
+                        </select>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <div class="line-chart">
+                                <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0;">
+                                    <!-- Y-axis labels -->
+                                    <text x="10" y="20" class="chart-label y" text-anchor="end">5.0T</text>
+                                    <text x="10" y="70" class="chart-label y" text-anchor="end">4.0T</text>
+                                    <text x="10" y="120" class="chart-label y" text-anchor="end">3.0T</text>
+                                    <text x="10" y="170" class="chart-label y" text-anchor="end">2.0T</text>
+                                    <text x="10" y="220" class="chart-label y" text-anchor="end">1.0T</text>
+                                    <text x="10" y="270" class="chart-label y" text-anchor="end">0T</text>
+                                    
+                                    <!-- X-axis labels -->
+                                    <text x="15%" y="100%" class="chart-label x">Jul</text>
+                                    <text x="30%" y="100%" class="chart-label x">Aug</text>
+                                    <text x="45%" y="100%" class="chart-label x">Sep</text>
+                                    <text x="60%" y="100%" class="chart-label x">Oct</text>
+                                    <text x="75%" y="100%" class="chart-label x">Nov</text>
+                                    <text x="90%" y="100%" class="chart-label x">Dec</text>
+                                    
+                                    <!-- Grid lines -->
+                                    <line x1="60" y1="20" x2="95%" y2="20" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="2,2"/>
+                                    <line x1="60" y1="70" x2="95%" y2="70" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="2,2"/>
+                                    <line x1="60" y1="120" x2="95%" y2="120" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="2,2"/>
+                                    <line x1="60" y1="170" x2="95%" y2="170" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="2,2"/>
+                                    <line x1="60" y1="220" x2="95%" y2="220" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="2,2"/>
+                                    
+                                    <!-- Line chart path -->
+                                    <path class="chart-line-path" d="M 15% 180 L 30% 150 L 45% 120 L 60% 100 L 75% 80 L 90% 60" stroke="#27ae60" stroke-width="3" fill="none"/>
+                                    
+                                    <!-- Data points -->
+                                    <circle cx="15%" cy="180" r="5" fill="#27ae60" stroke="white" stroke-width="2"/>
+                                    <circle cx="30%" cy="150" r="5" fill="#27ae60" stroke="white" stroke-width="2"/>
+                                    <circle cx="45%" cy="120" r="5" fill="#27ae60" stroke="white" stroke-width="2"/>
+                                    <circle cx="60%" cy="100" r="5" fill="#27ae60" stroke="white" stroke-width="2"/>
+                                    <circle cx="75%" cy="80" r="5" fill="#27ae60" stroke="white" stroke-width="2"/>
+                                    <circle cx="90%" cy="60" r="5" fill="#27ae60" stroke="white" stroke-width="2"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Submissions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Recent Submissions</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="history-item">
+                            <div class="history-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </div>
+                            <div class="history-info">
+                                <div class="history-title">Steel Scrap - WO-2024-001</div>
+                                <div class="history-meta">2.5 tons • Dec 28, 2024</div>
+                            </div>
+                            <div class="history-amount">₹1.75L</div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </div>
+                            <div class="history-info">
+                                <div class="history-title">Aluminum Scrap - WO-2024-003</div>
+                                <div class="history-meta">1.8 tons • Dec 25, 2024</div>
+                            </div>
+                            <div class="history-amount">₹1.26L</div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </div>
+                            <div class="history-info">
+                                <div class="history-title">Mixed Scrap - WO-2024-002</div>
+                                <div class="history-meta">1.2 tons • Dec 22, 2024</div>
+                            </div>
+                            <div class="history-amount">₹84K</div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </div>
+                            <div class="history-info">
+                                <div class="history-title">Steel Scrap - WO-2024-004</div>
+                                <div class="history-meta">0.8 tons • Dec 20, 2024</div>
+                            </div>
+                            <div class="history-amount">₹56K</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scrap Pricing Table -->
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-header">
+                    <h2 class="card-title">Scrap Pricing (per Kg)</h2>
+                </div>
+                <div class="card-body">
+                    <table class="pricing-table">
+                        <thead>
+                            <tr>
+                                <th>Scrap Type</th>
+                                <th>Price per Kg</th>
+                                <th>Price per Ton</th>
+                                <th>Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="scrap-type">Steel Scrap</span></td>
+                                <td><span class="price-value">₹70/kg</span></td>
+                                <td>₹70,000/ton</td>
+                                <td>Dec 1, 2024</td>
+                            </tr>
+                            <tr>
+                                <td><span class="scrap-type">Aluminum Scrap</span></td>
+                                <td><span class="price-value">₹120/kg</span></td>
+                                <td>₹1,20,000/ton</td>
+                                <td>Dec 1, 2024</td>
+                            </tr>
+                            <tr>
+                                <td><span class="scrap-type">Copper Scrap</span></td>
+                                <td><span class="price-value">₹650/kg</span></td>
+                                <td>₹6,50,000/ton</td>
+                                <td>Dec 1, 2024</td>
+                            </tr>
+                            <tr>
+                                <td><span class="scrap-type">Plastic Scrap</span></td>
+                                <td><span class="price-value">₹25/kg</span></td>
+                                <td>₹25,000/ton</td>
+                                <td>Dec 1, 2024</td>
+                            </tr>
+                            <tr>
+                                <td><span class="scrap-type">Mixed Scrap</span></td>
+                                <td><span class="price-value">₹50/kg</span></td>
+                                <td>₹50,000/ton</td>
+                                <td>Dec 1, 2024</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Scrap Entries Table -->
+            <div class="filters-bar">
+                <div class="search-box">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" placeholder="Search by job number, scrap type...">
+                </div>
+                <select class="filter-select">
+                    <option>All Scrap Types</option>
+                    <option>Steel Scrap</option>
+                    <option>Aluminum Scrap</option>
+                    <option>Copper Scrap</option>
+                    <option>Plastic Scrap</option>
+                    <option>Mixed Scrap</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Jobs</option>
+                    <option>WO-2024-001</option>
+                    <option>WO-2024-002</option>
+                    <option>WO-2024-003</option>
+                </select>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Submission Date</th>
+                            <th>Job Number</th>
+                            <th>Scrap Type</th>
+                            <th>Quantity (Tons)</th>
+                            <th>Price/Kg</th>
+                            <th>Total Value</th>
+                            <th>Submitted By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Dec 28, 2024</td>
+                            <td><span class="job-number">WO-2024-001</span></td>
+                            <td><span class="badge badge-steel">Steel Scrap</span></td>
+                            <td><span class="scrap-quantity">2.5 tons</span></td>
+                            <td>₹70/kg</td>
+                            <td><span class="scrap-value">₹1,75,000</span></td>
+                            <td>Rajesh Kumar</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn view" onclick="alert('View details')">View</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dec 25, 2024</td>
+                            <td><span class="job-number">WO-2024-003</span></td>
+                            <td><span class="badge badge-aluminum">Aluminum Scrap</span></td>
+                            <td><span class="scrap-quantity">1.8 tons</span></td>
+                            <td>₹120/kg</td>
+                            <td><span class="scrap-value">₹2,16,000</span></td>
+                            <td>Priya Sharma</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn view" onclick="alert('View details')">View</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dec 22, 2024</td>
+                            <td><span class="job-number">WO-2024-002</span></td>
+                            <td><span class="badge badge-plastic">Mixed Scrap</span></td>
+                            <td><span class="scrap-quantity">1.2 tons</span></td>
+                            <td>₹50/kg</td>
+                            <td><span class="scrap-value">₹60,000</span></td>
+                            <td>Amit Mehta</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn view" onclick="alert('View details')">View</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dec 20, 2024</td>
+                            <td><span class="job-number">WO-2024-004</span></td>
+                            <td><span class="badge badge-steel">Steel Scrap</span></td>
+                            <td><span class="scrap-quantity">0.8 tons</span></td>
+                            <td>₹70/kg</td>
+                            <td><span class="scrap-value">₹56,000</span></td>
+                            <td>Sunil Kulkarni</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn view" onclick="alert('View details')">View</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dec 18, 2024</td>
+                            <td><span class="job-number">WO-2024-001</span></td>
+                            <td><span class="badge badge-aluminum">Aluminum Scrap</span></td>
+                            <td><span class="scrap-quantity">1.5 tons</span></td>
+                            <td>₹120/kg</td>
+                            <td><span class="scrap-value">₹1,80,000</span></td>
+                            <td>Rajesh Kumar</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn view" onclick="alert('View details')">View</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dec 15, 2024</td>
+                            <td><span class="job-number">WO-2024-005</span></td>
+                            <td><span class="badge badge-steel">Steel Scrap</span></td>
+                            <td><span class="scrap-quantity">3.2 tons</span></td>
+                            <td>₹70/kg</td>
+                            <td><span class="scrap-value">₹2,24,000</span></td>
+                            <td>Priya Sharma</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn view" onclick="alert('View details')">View</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <span class="pagination-info">Showing 1 to 6 of 24 scrap entries</span>
+                    <div class="pagination-btns">
+                        <button class="page-btn">«</button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <button class="page-btn">...</button>
+                        <button class="page-btn">4</button>
+                        <button class="page-btn">»</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

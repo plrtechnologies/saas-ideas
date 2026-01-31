@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Order Detail - MiniERP</title>
+    <style>
+        :root { --primary-color: #27ae60; --bg-color: #f3f4f6; --sidebar-bg: #1e293b; --card-bg: #ffffff; --text-primary: #1f2937; --text-secondary: #6b7280; --border-color: #e5e7eb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; flex-shrink: 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 14px; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--primary-color); }
+        .nav-icon { width: 20px; height: 20px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary); }
+        .breadcrumb a { color: var(--primary-color); text-decoration: none; }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--text-primary); margin-top: 4px; }
+        .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        
+        .content-area { padding: 32px; flex: 1; overflow-y: auto; }
+        .detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+        
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .card-body { padding: 24px; }
+        
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .info-item { }
+        .info-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 4px; }
+        .info-value { font-size: 15px; color: var(--text-primary); font-weight: 500; }
+        
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-in-progress { background: #fef3c7; color: #92400e; }
+        
+        .progress-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        .progress-bar { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+        .progress-fill { height: 100%; background: var(--primary-color); }
+        
+        .materials-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .materials-table th, .materials-table td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        .materials-table th { background: #f9fafb; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+        
+        .timeline { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        .timeline-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--text-primary); }
+        .timeline-item { display: flex; gap: 12px; margin-bottom: 16px; }
+        .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary-color); margin-top: 5px; flex-shrink: 0; }
+        .timeline-content { flex: 1; }
+        .timeline-text { font-size: 14px; color: var(--text-primary); }
+        .timeline-time { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">RAGHAVA ENGG</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="06-job-orders.html" class="nav-item active">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Job Orders
+            </a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <div class="breadcrumb">
+                    <a href="06-job-orders.html">Job Orders</a>
+                    <span>›</span>
+                    <span>WO-2024-001</span>
+                </div>
+                <h1 class="page-title">WO-2024-001 - Drill Bit Assembly</h1>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline">Print</button>
+                <a href="08-job-entry.html" class="btn btn-success">Add Entry</a>
+            </div>
+        </header>
+        
+        <div class="content-area">
+            <div class="detail-grid">
+                <div>
+                    <!-- Job Info -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Job Information</h2>
+                            <span class="badge badge-in-progress">IN_PROGRESS</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Job Number</div>
+                                    <div class="info-value">WO-2024-001</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Customer</div>
+                                    <div class="info-value">ABC Industries</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Description</div>
+                                    <div class="info-value">Drill Bit Assembly (100 pcs)</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Due Date</div>
+                                    <div class="info-value">Feb 15, 2026</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Ordered Quantity</div>
+                                    <div class="info-value">100 pcs</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Completed Quantity</div>
+                                    <div class="info-value">20 pcs</div>
+                                </div>
+                            </div>
+                            <div class="progress-section">
+                                <div class="info-label">Progress</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 20%"></div>
+                                </div>
+                                <div class="info-value">20% Complete</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Materials -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Materials Consumed</h2>
+                        </div>
+                        <div class="card-body">
+                            <table class="materials-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Quantity</th>
+                                        <th>Unit</th>
+                                        <th>Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Steel Sheet 2mm</td>
+                                        <td>45.5</td>
+                                        <td>Kg</td>
+                                        <td>₹3,867.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td>M8 Hex Bolt</td>
+                                        <td>120</td>
+                                        <td>Pcs</td>
+                                        <td>₹300.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Welding Rod</td>
+                                        <td>2.5</td>
+                                        <td>Kg</td>
+                                        <td>₹450.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Documents -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Documents (2)</h2>
+                            <a href="11-document-upload.html" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">+ Upload</a>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px;">
+                                <div style="width: 40px; height: 40px; background: #fee2e2; border-radius: 8px; display: flex; align-items: center; justify-content: center;">📄</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 14px; font-weight: 500;">Design_Specification.pdf</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">2.4 MB • Uploaded Jan 22</div>
+                                </div>
+                                <a href="12-document-viewer.html" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; background: var(--bg-color); color: var(--text-primary); text-decoration: none;">View</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <!-- Quick Actions -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Quick Actions</h2>
+                        </div>
+                        <div class="card-body" style="display: flex; flex-direction: column; gap: 12px;">
+                            <a href="08-job-entry.html" class="btn btn-primary" style="text-align: center; text-decoration: none;">Add Material/Time Entry</a>
+                            <button class="btn btn-outline">Issue Materials</button>
+                            <button class="btn btn-outline">Update Status</button>
+                            <button class="btn btn-outline">Generate Report</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Profitability -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Profitability</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-item" style="margin-bottom: 16px;">
+                                <div class="info-label">Total Cost</div>
+                                <div class="info-value">₹4,617.50</div>
+                            </div>
+                            <div class="info-item" style="margin-bottom: 16px;">
+                                <div class="info-label">Estimated Revenue</div>
+                                <div class="info-value">₹12,500.00</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Profit Margin</div>
+                                <div class="info-value" style="color: #10b981; font-size: 18px;">63.0%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Activity Timeline</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-text">Status changed to IN_PROGRESS</div>
+                                    <div class="timeline-time">Today, 10:30 AM</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-text">Materials issued</div>
+                                    <div class="timeline-time">Today, 09:15 AM</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-text">Job released</div>
+                                    <div class="timeline-time">Jan 22, 2026, 03:45 PM</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-text">Job created</div>
+                                    <div class="timeline-time">Jan 22, 2026, 02:00 PM</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Flow - Keycloak - MiniERP</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #141e30 0%, #243b55 100%);
+            min-height: 100vh;
+            padding: 40px;
+            color: #e0e0e0;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        h1 span { color: #667eea; font-weight: 600; }
+        .subtitle {
+            text-align: center;
+            color: #a0aec0;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+        
+        .flow-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Actors */
+        .actors {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+        }
+        
+        .actor {
+            text-align: center;
+        }
+        
+        .actor-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 10px;
+        }
+        
+        .actor-icon.user { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .actor-icon.frontend { background: linear-gradient(135deg, #4fd1c5, #38b2ac); }
+        .actor-icon.keycloak { background: linear-gradient(135deg, #f6ad55, #ed8936); }
+        .actor-icon.backend { background: linear-gradient(135deg, #e94560, #c23a54); }
+        
+        .actor-name {
+            font-weight: 600;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .actor-desc {
+            font-size: 11px;
+            color: #718096;
+        }
+        
+        /* Flow Steps */
+        .flow-steps {
+            position: relative;
+        }
+        
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .step-num {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: #fff;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .step-from, .step-to {
+            font-size: 11px;
+            color: #667eea;
+            font-weight: 600;
+            min-width: 80px;
+        }
+        
+        .step-arrow {
+            color: #4fd1c5;
+            font-size: 20px;
+        }
+        
+        .step-action {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            color: #fff;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        
+        .step-desc {
+            font-size: 11px;
+            color: #718096;
+        }
+        
+        .step-code {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-family: monospace;
+            font-size: 10px;
+            color: #a0aec0;
+        }
+        
+        /* JWT Section */
+        .jwt-section {
+            margin-top: 30px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05));
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        
+        .jwt-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .jwt-parts {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .jwt-part {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            min-width: 200px;
+        }
+        
+        .jwt-part-title {
+            font-size: 11px;
+            color: #667eea;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .jwt-part.header .jwt-part-title { color: #e94560; }
+        .jwt-part.payload .jwt-part-title { color: #4fd1c5; }
+        .jwt-part.signature .jwt-part-title { color: #f6ad55; }
+        
+        .jwt-code {
+            font-family: monospace;
+            font-size: 10px;
+            color: #a0aec0;
+            line-height: 1.5;
+        }
+        
+        .jwt-code .key { color: #e94560; }
+        .jwt-code .value { color: #4fd1c5; }
+        
+        /* Role mapping */
+        .roles-section {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        
+        .role-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .role-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .role-name {
+            font-weight: 600;
+            color: #fff;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        
+        .role-perms {
+            font-size: 10px;
+            color: #718096;
+        }
+        
+        /* Features Grid */
+        .features-grid {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        
+        .feature {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .feature-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #f6ad55, #ed8936);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .feature-text {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+        
+        .feature-text strong {
+            display: block;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Authentication Flow with <span>Keycloak</span></h1>
+        <p class="subtitle">OAuth 2.0 + PKCE • JWT Tokens • Role-Based Access Control • Multi-Tenant</p>
+        
+        <div class="flow-container">
+            <!-- Actors -->
+            <div class="actors">
+                <div class="actor">
+                    <div class="actor-icon user">👤</div>
+                    <div class="actor-name">User</div>
+                    <div class="actor-desc">Owner / Manager / Worker</div>
+                </div>
+                <div class="actor">
+                    <div class="actor-icon frontend">⚛️</div>
+                    <div class="actor-name">React SPA</div>
+                    <div class="actor-desc">Frontend App</div>
+                </div>
+                <div class="actor">
+                    <div class="actor-icon keycloak">🔐</div>
+                    <div class="actor-name">Keycloak</div>
+                    <div class="actor-desc">Identity Provider</div>
+                </div>
+                <div class="actor">
+                    <div class="actor-icon backend">⚙️</div>
+                    <div class="actor-name">Backend API</div>
+                    <div class="actor-desc">NestJS / FastAPI</div>
+                </div>
+            </div>
+            
+            <!-- Flow Steps -->
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-from">User</div>
+                        <div class="step-arrow">→</div>
+                        <div class="step-action">
+                            <div class="step-title">Access Application</div>
+                            <div class="step-desc">User visits raghava.minierp.com (tenant subdomain)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-from">React</div>
+                        <div class="step-arrow">→</div>
+                        <div class="step-action">
+                            <div class="step-title">Redirect to Keycloak</div>
+                            <div class="step-code">/auth/realms/minierp/protocol/openid-connect/auth?client_id=spa&response_type=code</div>
+                        </div>
+                        <div class="step-to">Keycloak</div>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-from">User</div>
+                        <div class="step-arrow">→</div>
+                        <div class="step-action">
+                            <div class="step-title">Login with Credentials / SSO</div>
+                            <div class="step-desc">Keycloak shows branded login page (org logo, MFA if enabled)</div>
+                        </div>
+                        <div class="step-to">Keycloak</div>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-from">Keycloak</div>
+                        <div class="step-arrow">→</div>
+                        <div class="step-action">
+                            <div class="step-title">Return Authorization Code</div>
+                            <div class="step-code">https://raghava.minierp.com/callback?code=abc123&state=xyz</div>
+                        </div>
+                        <div class="step-to">React</div>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">5</div>
+                    <div class="step-content">
+                        <div class="step-from">React</div>
+                        <div class="step-arrow">→</div>
+                        <div class="step-action">
+                            <div class="step-title">Exchange Code for Tokens (PKCE)</div>
+                            <div class="step-desc">POST /token with code_verifier</div>
+                        </div>
+                        <div class="step-to">Keycloak</div>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">6</div>
+                    <div class="step-content">
+                        <div class="step-from">React</div>
+                        <div class="step-arrow">→</div>
+                        <div class="step-action">
+                            <div class="step-title">API Request with JWT</div>
+                            <div class="step-code">Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...</div>
+                        </div>
+                        <div class="step-to">Backend</div>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">7</div>
+                    <div class="step-content">
+                        <div class="step-from">Backend</div>
+                        <div class="step-arrow">→</div>
+                        <div class="step-action">
+                            <div class="step-title">Validate JWT & Extract tenant_id</div>
+                            <div class="step-desc">Verify signature with Keycloak public key (JWKS), extract tenant_id and roles</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- JWT Token Structure -->
+            <div class="jwt-section">
+                <div class="jwt-title">🎫 JWT Token Structure (tenant_id in payload)</div>
+                <div class="jwt-parts">
+                    <div class="jwt-part header">
+                        <div class="jwt-part-title">Header</div>
+                        <div class="jwt-code">
+                            {<br>
+                            &nbsp;&nbsp;<span class="key">"alg"</span>: <span class="value">"RS256"</span>,<br>
+                            &nbsp;&nbsp;<span class="key">"typ"</span>: <span class="value">"JWT"</span><br>
+                            }
+                        </div>
+                    </div>
+                    <div class="jwt-part payload">
+                        <div class="jwt-part-title">Payload (Claims)</div>
+                        <div class="jwt-code">
+                            {<br>
+                            &nbsp;&nbsp;<span class="key">"sub"</span>: <span class="value">"user-uuid"</span>,<br>
+                            &nbsp;&nbsp;<span class="key">"tenant_id"</span>: <span class="value">"raghava-id"</span>,<br>
+                            &nbsp;&nbsp;<span class="key">"tenant_code"</span>: <span class="value">"raghava"</span>,<br>
+                            &nbsp;&nbsp;<span class="key">"roles"</span>: <span class="value">["manager"]</span>,<br>
+                            &nbsp;&nbsp;<span class="key">"name"</span>: <span class="value">"Rajesh Kumar"</span><br>
+                            }
+                        </div>
+                    </div>
+                    <div class="jwt-part signature">
+                        <div class="jwt-part-title">Signature</div>
+                        <div class="jwt-code">
+                            RSASHA256(<br>
+                            &nbsp;&nbsp;base64(header) + "." +<br>
+                            &nbsp;&nbsp;base64(payload),<br>
+                            &nbsp;&nbsp;keycloak_private_key<br>
+                            )
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Roles -->
+            <div class="roles-section">
+                <div class="role-card">
+                    <div class="role-icon">👨‍💼</div>
+                    <div class="role-name">Owner/Admin</div>
+                    <div class="role-perms">All access, user mgmt, settings</div>
+                </div>
+                <div class="role-card">
+                    <div class="role-icon">📊</div>
+                    <div class="role-name">Manager</div>
+                    <div class="role-perms">Jobs, inventory, dispatch, reports</div>
+                </div>
+                <div class="role-card">
+                    <div class="role-icon">💰</div>
+                    <div class="role-name">Accountant</div>
+                    <div class="role-perms">Invoices, GST, receivables/payables</div>
+                </div>
+                <div class="role-card">
+                    <div class="role-icon">📦</div>
+                    <div class="role-name">Storekeeper</div>
+                    <div class="role-perms">GRN, stock issues/receipts</div>
+                </div>
+            </div>
+            
+            <!-- Features -->
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">🔒</div>
+                    <div class="feature-text">
+                        <strong>MFA Support</strong>
+                        TOTP / SMS verification
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🏢</div>
+                    <div class="feature-text">
+                        <strong>SSO Integration</strong>
+                        SAML / OIDC with org IdP
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔄</div>
+                    <div class="feature-text">
+                        <strong>Token Refresh</strong>
+                        Silent refresh, sliding sessions
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

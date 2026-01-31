@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Tier Architecture - MiniERP (MSME Ops)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0b1220 0%, #0f2d2a 100%);
+            min-height: 100vh;
+            padding: 40px;
+            color: #e0e0e0;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 40px;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        h1 span { color: #7ee787; font-weight: 700; }
+
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .tier {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .tier-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tier-badge {
+            background: linear-gradient(135deg, #7ee787, #2ea043);
+            color: #0b1220;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .tier-badge.tier-2 { background: linear-gradient(135deg, #a5a6ff, #7c3aed); color: #0b1220; }
+        .tier-badge.tier-3 { background: linear-gradient(135deg, #ffd479, #f59e0b); color: #0b1220; }
+
+        .tier-title {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .components {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .component {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 210px;
+            max-width: 320px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+
+        .component:hover {
+            transform: translateY(-4px);
+            background: rgba(255,255,255,0.12);
+            border-color: #7ee787;
+        }
+
+        .component-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #7ee787, #2ea043);
+            border-radius: 12px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .component.tier-2 .component-icon { background: linear-gradient(135deg, #a5a6ff, #7c3aed); }
+        .component.tier-3 .component-icon { background: linear-gradient(135deg, #ffd479, #f59e0b); }
+
+        .component-name {
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .component-tech {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-bottom: 10px;
+        }
+
+        .component-features {
+            font-size: 11px;
+            color: #c9d1d9;
+            text-align: left;
+            list-style: none;
+            line-height: 1.45;
+        }
+
+        .component-features li { padding: 2px 0; }
+        .component-features li::before {
+            content: "•";
+            color: #7ee787;
+            margin-right: 6px;
+        }
+
+        .arrow-down {
+            text-align: center;
+            padding: 10px;
+            font-size: 22px;
+            color: #7ee787;
+            letter-spacing: 0.5px;
+        }
+
+        .external-services {
+            margin-top: 30px;
+            background: rgba(126, 231, 135, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px dashed rgba(126, 231, 135, 0.35);
+        }
+
+        .external-services .tier-badge {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .legend {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 12px;
+            color: #a0aec0;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 900px) {
+            body { padding: 20px; }
+            .component { min-width: 180px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Traditional <span>3-Tier Architecture</span> — MiniERP (MSME Ops)</h1>
+
+        <div class="architecture">
+            <!-- Tier 1: Presentation -->
+            <div class="tier">
+                <div class="tier-header">
+                    <span class="tier-badge">Tier 1</span>
+                    <span class="tier-title">Presentation Layer</span>
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-icon">🖥️</div>
+                        <div class="component-name">Web App (SPA)</div>
+                        <div class="component-tech">React + TypeScript (MUI/Ant)</div>
+                        <ul class="component-features">
+                            <li>Tenant-aware login</li>
+                            <li>Role-based routing (Owner/Manager/Accountant/Worker)</li>
+                            <li>Operational screens: WO, WIP, batches, dispatch</li>
+                        </ul>
+                    </div>
+                    <div class="component">
+                        <div class="component-icon">🌐</div>
+                        <div class="component-name">Static Hosting / CDN</div>
+                        <div class="component-tech">Nginx / CloudFront / Vercel</div>
+                        <ul class="component-features">
+                            <li>SSL termination</li>
+                            <li>Static asset caching</li>
+                            <li>Compression + edge delivery</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow-down">▼ HTTPS / REST API (OIDC JWT) ▼</div>
+
+            <!-- Tier 2: Application -->
+            <div class="tier">
+                <div class="tier-header">
+                    <span class="tier-badge tier-2">Tier 2</span>
+                    <span class="tier-title">Application Layer (Business Logic)</span>
+                </div>
+                <div class="components">
+                    <div class="component tier-2">
+                        <div class="component-icon">🏢</div>
+                        <div class="component-name">Tenant Context</div>
+                        <div class="component-tech">tenant_id + RLS</div>
+                        <ul class="component-features">
+                            <li>Extract tenant_id from Keycloak JWT</li>
+                            <li>Enforce tenant isolation per request</li>
+                            <li>Audit who/what/when</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">🔐</div>
+                        <div class="component-name">Auth & RBAC</div>
+                        <div class="component-tech">Keycloak OIDC + Guards</div>
+                        <ul class="component-features">
+                            <li>SSO + MFA</li>
+                            <li>Role-based API authorization</li>
+                            <li>Token validation via JWKS</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">📥</div>
+                        <div class="component-name">Order Requisition</div>
+                        <div class="component-tech">Work Order intake</div>
+                        <ul class="component-features">
+                            <li>Customer requests with phased delivery</li>
+                            <li>REQUESTED → ACCEPTED/RENEGOTIATE</li>
+                            <li>Committed dates & quantities</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">📦</div>
+                        <div class="component-name">Inventory Module</div>
+                        <div class="component-tech">Ledger-first stock</div>
+                        <ul class="component-features">
+                            <li>GRN/receipts and issues</li>
+                            <li>Material pickup for jobs</li>
+                            <li>Low stock alerts (optional)</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">🏭</div>
+                        <div class="component-name">WIP / Process Tracking</div>
+                        <div class="component-tech">State machine</div>
+                        <ul class="component-features">
+                            <li>Per-process WIP & completion</li>
+                            <li>Batching + thresholds</li>
+                            <li>Scrap/rework capture</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">🚚</div>
+                        <div class="component-name">Dispatch & Delivery</div>
+                        <div class="component-tech">Batch dispatch workflow</div>
+                        <ul class="component-features">
+                            <li>Notify customer when batch ready</li>
+                            <li>Dispatch on confirmation / hold otherwise</li>
+                            <li>Delivery notes & status</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">🧾</div>
+                        <div class="component-name">Invoicing & e-Invoice</div>
+                        <div class="component-tech">GST + IRN + QR</div>
+                        <ul class="component-features">
+                            <li>Invoice generation after completion</li>
+                            <li>IRN generation via GSP/ASP</li>
+                            <li>PDF with IRN/QR stored in object storage</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">📄</div>
+                        <div class="component-name">Document Management</div>
+                        <div class="component-tech">Upload, Storage, Versioning</div>
+                        <ul class="component-features">
+                            <li>Design files (CAD, drawings, blueprints)</li>
+                            <li>Job attachments & photos</li>
+                            <li>Version control for designs</li>
+                            <li>Pre-signed URLs for secure access</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">📊</div>
+                        <div class="component-name">Reports & Profitability</div>
+                        <div class="component-tech">Dashboards</div>
+                        <ul class="component-features">
+                            <li>Job profitability (materials + time + scrap)</li>
+                            <li>WIP visibility and ETA</li>
+                            <li>Inventory & delivery summaries</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-2">
+                        <div class="component-icon">🔔</div>
+                        <div class="component-name">Notifications</div>
+                        <div class="component-tech">Email/SMS/WhatsApp (opt)</div>
+                        <ul class="component-features">
+                            <li>Batch ready → customer notify</li>
+                            <li>Dispatch/invoice status updates</li>
+                            <li>Retry + audit for delivery guarantees</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow-down">▼ SQL / Storage Account / Cache ▼</div>
+
+            <!-- Tier 3: Data -->
+            <div class="tier">
+                <div class="tier-header">
+                    <span class="tier-badge tier-3">Tier 3</span>
+                    <span class="tier-title">Data Layer</span>
+                </div>
+                <div class="components">
+                    <div class="component tier-3">
+                        <div class="component-icon">🐘</div>
+                        <div class="component-name">PostgreSQL</div>
+                        <div class="component-tech">Primary DB (shared schema)</div>
+                        <ul class="component-features">
+                            <li>tenant_id in all business tables</li>
+                            <li>Row Level Security (RLS)</li>
+                            <li>Ledger-first inventory postings</li>
+                            <li>Document metadata & indexing</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-3">
+                        <div class="component-icon">🗂️</div>
+                        <div class="component-name">Storage Account</div>
+                        <div class="component-tech">S3 / R2 / Azure Blob / MinIO</div>
+                        <ul class="component-features">
+                            <li>Invoice PDFs (IRN + QR)</li>
+                            <li>Design files (CAD, drawings, images)</li>
+                            <li>Job documents & attachments</li>
+                            <li>Versioning for design revisions</li>
+                            <li>Tenant-isolated storage paths</li>
+                            <li>Lifecycle policies & encryption</li>
+                        </ul>
+                    </div>
+                    <div class="component tier-3">
+                        <div class="component-icon">⚡</div>
+                        <div class="component-name">Redis (Optional)</div>
+                        <div class="component-tech">Cache / Jobs / Rate limits</div>
+                        <ul class="component-features">
+                            <li>Session/token cache (optional)</li>
+                            <li>Background jobs queue</li>
+                            <li>API caching for dashboards</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- External Services -->
+            <div class="external-services">
+                <div class="tier-header">
+                    <span class="tier-badge">External</span>
+                    <span class="tier-title">External Services</span>
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);">🔑</div>
+                        <div class="component-name">Keycloak</div>
+                        <div class="component-tech">Identity Provider</div>
+                        <ul class="component-features">
+                            <li>SSO / MFA</li>
+                            <li>Users, roles, policies</li>
+                        </ul>
+                    </div>
+                    <div class="component">
+                        <div class="component-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);">🧷</div>
+                        <div class="component-name">GST e-Invoice Provider</div>
+                        <div class="component-tech">GSP / ASP API</div>
+                        <ul class="component-features">
+                            <li>IRN generation</li>
+                            <li>ACK + signed payload</li>
+                        </ul>
+                    </div>
+                    <div class="component">
+                        <div class="component-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);">📨</div>
+                        <div class="component-name">Email/SMS Gateway</div>
+                        <div class="component-tech">SES / Twilio / Local SMS</div>
+                        <ul class="component-features">
+                            <li>Batch-ready notifications</li>
+                            <li>Dispatch/invoice alerts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #7ee787, #2ea043);"></div>
+                <span>Presentation</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #a5a6ff, #7c3aed);"></div>
+                <span>Business Logic</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #ffd479, #f59e0b);"></div>
+                <span>Data Layer</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #22c55e, #16a34a);"></div>
+                <span>External Services</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

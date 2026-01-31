@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Tenancy Architecture - MiniERP (MSME Ops)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            padding: 40px;
+            color: #e0e0e0;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        h1 span { color: #f6ad55; font-weight: 600; }
+        .subtitle {
+            text-align: center;
+            color: #a0aec0;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+        
+        .architecture {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .layer {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .layer-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .layer-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .layer-desc {
+            font-size: 11px;
+            color: #718096;
+        }
+        
+        /* Tenant Cards */
+        .tenants {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .tenant-card {
+            background: linear-gradient(135deg, rgba(79, 209, 197, 0.2), rgba(56, 178, 172, 0.1));
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        
+        .tenant-card.tenant-b {
+            background: linear-gradient(135deg, rgba(159, 122, 234, 0.2), rgba(128, 90, 213, 0.1));
+            border-color: rgba(159, 122, 234, 0.3);
+        }
+        
+        .tenant-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .tenant-logo {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .tenant-info {
+            flex: 1;
+        }
+        
+        .tenant-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #fff;
+        }
+        
+        .tenant-type {
+            font-size: 10px;
+            color: #4fd1c5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .tenant-card.tenant-b .tenant-type {
+            color: #9f7aea;
+        }
+        
+        .tenant-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .feature-tag {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            color: #a0aec0;
+        }
+        
+        .customer-clients {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(255,255,255,0.1);
+        }
+        
+        .customer-clients-title {
+            font-size: 10px;
+            color: #718096;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        
+        .customer-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .customer-chip {
+            background: rgba(246, 173, 85, 0.2);
+            border: 1px solid rgba(246, 173, 85, 0.4);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: #f6ad55;
+        }
+        
+        /* Central API */
+        .central-api {
+            text-align: center;
+        }
+        
+        .api-box {
+            background: linear-gradient(135deg, #2d3748, #1a202c);
+            border: 2px solid #4fd1c5;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .api-title {
+            color: #4fd1c5;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .api-desc {
+            font-size: 11px;
+            color: #a0aec0;
+        }
+        
+        .middleware-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .middleware-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .middleware-icon {
+            width: 24px;
+            height: 24px;
+            background: rgba(79, 209, 197, 0.2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        /* Data Layer */
+        .data-section {
+            margin-bottom: 20px;
+        }
+        
+        .data-title {
+            font-size: 12px;
+            color: #f6ad55;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .table-preview {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 10px;
+        }
+        
+        .table-header {
+            background: rgba(246, 173, 85, 0.2);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 8px;
+            font-weight: 600;
+            color: #f6ad55;
+        }
+        
+        .table-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 6px 8px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .table-row.tenant-a { background: rgba(79, 209, 197, 0.1); }
+        .table-row.tenant-b { background: rgba(159, 122, 234, 0.1); }
+        
+        .s3-folders {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .s3-folder {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 11px;
+        }
+        
+        .s3-folder.tenant-a { border-left: 3px solid #4fd1c5; }
+        .s3-folder.tenant-b { border-left: 3px solid #9f7aea; }
+        
+        .folder-path {
+            font-family: monospace;
+            color: #a0aec0;
+        }
+        
+        /* Arrows */
+        .arrow-section {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .arrow {
+            color: #4fd1c5;
+            font-size: 20px;
+        }
+        
+        .arrow-label {
+            font-size: 10px;
+            color: #718096;
+            margin-top: 4px;
+        }
+        
+        /* Key Concept Box */
+        .key-concept {
+            grid-column: span 3;
+            background: linear-gradient(135deg, rgba(246, 173, 85, 0.1), rgba(237, 137, 54, 0.05));
+            border: 1px solid rgba(246, 173, 85, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .key-concept-title {
+            color: #f6ad55;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .key-concept-text {
+            font-size: 13px;
+            color: #a0aec0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .key-concept-text strong {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Multi-Tenancy <span>Architecture</span></h1>
+        <p class="subtitle">Organizations as Tenants • Customers as Clients • Shared Infrastructure with Logical Isolation</p>
+        
+        <div class="architecture">
+            <!-- UI Layer -->
+            <div class="layer">
+                <div class="layer-header">
+                    <div class="layer-title">🖥️ UI Layer</div>
+                    <div class="layer-desc">Per-Tenant Branding</div>
+                </div>
+                <div class="tenants">
+                    <div class="tenant-card">
+                        <div class="tenant-header">
+                            <div class="tenant-logo">🏭</div>
+                            <div class="tenant-info">
+                                <div class="tenant-name">Raghava Engg Works</div>
+                                <div class="tenant-type">Organization Tenant</div>
+                            </div>
+                        </div>
+                        <div class="tenant-features">
+                            <span class="feature-tag">raghava.minierp.com</span>
+                            <span class="feature-tag">#1a365d</span>
+                            <span class="feature-tag">Custom Logo</span>
+                        </div>
+                        <div class="customer-clients">
+                            <div class="customer-clients-title">Customers</div>
+                            <div class="customer-list">
+                                <span class="customer-chip">ABC Industries</span>
+                                <span class="customer-chip">XYZ Corp</span>
+                                <span class="customer-chip">Tech Solutions</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tenant-card tenant-b">
+                        <div class="tenant-header">
+                            <div class="tenant-logo">🔧</div>
+                            <div class="tenant-info">
+                                <div class="tenant-name">Dyna Drill Pvt. Ltd.</div>
+                                <div class="tenant-type">Organization Tenant</div>
+                            </div>
+                        </div>
+                        <div class="tenant-features">
+                            <span class="feature-tag">dynadrill.minierp.com</span>
+                            <span class="feature-tag">#2d3748</span>
+                            <span class="feature-tag">Custom Logo</span>
+                        </div>
+                        <div class="customer-clients">
+                            <div class="customer-clients-title">Customers</div>
+                            <div class="customer-list">
+                                <span class="customer-chip">Mining Co.</span>
+                                <span class="customer-chip">Construction Ltd.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- API Layer -->
+            <div class="layer">
+                <div class="layer-header">
+                    <div class="layer-title">⚙️ API Layer</div>
+                    <div class="layer-desc">Single Deployment, Tenant-Aware</div>
+                </div>
+                <div class="central-api">
+                    <div class="api-box">
+                        <div class="api-title">Centralized Backend API</div>
+                        <div class="api-desc">All queries filtered by tenant_id from JWT</div>
+                    </div>
+                    <div class="middleware-list">
+                        <div class="middleware-item">
+                            <div class="middleware-icon">🔐</div>
+                            <span>JWT Token Validation</span>
+                        </div>
+                        <div class="middleware-item">
+                            <div class="middleware-icon">🏢</div>
+                            <span>Extract tenant_id from JWT</span>
+                        </div>
+                        <div class="middleware-item">
+                            <div class="middleware-icon">👥</div>
+                            <span>Optional customer_id filter</span>
+                        </div>
+                        <div class="middleware-item">
+                            <div class="middleware-icon">🔍</div>
+                            <span>Auto-filter all queries</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data Layer -->
+            <div class="layer">
+                <div class="layer-header">
+                    <div class="layer-title">💾 Data Layer</div>
+                    <div class="layer-desc">Shared DB, Tenant Column + RLS</div>
+                </div>
+                
+                <div class="data-section">
+                    <div class="data-title">🐘 PostgreSQL Table</div>
+                    <div class="table-preview">
+                        <div class="table-header">
+                            <span>tenant_id</span>
+                            <span>customer_id</span>
+                            <span>work_order</span>
+                        </div>
+                        <div class="table-row tenant-a">
+                            <span>raghava-id</span>
+                            <span>abc-industries-id</span>
+                            <span>WO-001</span>
+                        </div>
+                        <div class="table-row tenant-a">
+                            <span>raghava-id</span>
+                            <span>xyz-corp-id</span>
+                            <span>WO-002</span>
+                        </div>
+                        <div class="table-row tenant-b">
+                            <span>dynadrill-id</span>
+                            <span>mining-co-id</span>
+                            <span>WO-003</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-section">
+                    <div class="data-title">📦 S3 Bucket Structure</div>
+                    <div class="s3-folders">
+                        <div class="s3-folder tenant-a">
+                            <div class="folder-path">/{raghava-id}/invoices/</div>
+                            <div class="folder-path">/{raghava-id}/documents/</div>
+                            <div class="folder-path">/{raghava-id}/branding/</div>
+                        </div>
+                        <div class="s3-folder tenant-b">
+                            <div class="folder-path">/{dynadrill-id}/invoices/</div>
+                            <div class="folder-path">/{dynadrill-id}/documents/</div>
+                            <div class="folder-path">/{dynadrill-id}/branding/</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Key Concept -->
+            <div class="key-concept">
+                <div class="key-concept-title">🔑 Key Concept: Organization = Tenant, Customer = Client</div>
+                <div class="key-concept-text">
+                    Each <strong>Organization/Business</strong> is a tenant with isolated data. They serve multiple <strong>Customers</strong> within their tenant.
+                    Data isolation happens at <strong>tenant_id</strong> level (organization), with optional <strong>customer_id</strong> filtering (customer).
+                    Same codebase, different branding - loaded at runtime based on subdomain.
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

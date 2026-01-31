@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workforce Management - MiniERP</title>
+    <style>
+        :root {
+            --primary-color: #27ae60;
+            --bg-color: #f3f4f6;
+            --sidebar-bg: #1e293b;
+            --card-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-color); display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 24px 0; }
+        .sidebar-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-placeholder { background: var(--primary-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 14px; }
+        .sidebar-nav { padding: 24px 12px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--primary-color); }
+        .nav-icon { width: 20px; height: 20px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .topbar { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: #229954; }
+        .btn-outline { background: white; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-outline:hover { background: var(--bg-color); }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .content-area { padding: 32px; flex: 1; overflow-y: auto; }
+        
+        .filters-bar { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+        .search-box { flex: 1; min-width: 250px; position: relative; }
+        .search-box input { width: 100%; padding: 10px 16px 10px 40px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
+        .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .filter-select { padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; background: white; min-width: 150px; }
+        
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
+        th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; }
+        td { font-size: 14px; color: var(--text-primary); }
+        tr:hover { background: #f9fafb; }
+        
+        .worker-cell { display: flex; align-items: center; gap: 12px; }
+        .worker-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }
+        .worker-info { }
+        .worker-name { font-weight: 500; color: var(--text-primary); }
+        .worker-id { font-size: 12px; color: var(--text-secondary); }
+        
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-active { background: #dcfce7; color: #166534; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+        
+        .attendance-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .attendance-badge.good { background: #dcfce7; color: #166534; }
+        .attendance-badge.warning { background: #fef3c7; color: #92400e; }
+        .attendance-badge.poor { background: #fee2e2; color: #991b1b; }
+        
+        .overtime-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #dbeafe; color: #1e40af; }
+        
+        .expand-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 6px; background: white; cursor: pointer; color: var(--text-secondary); transition: all 0.2s; }
+        .expand-btn:hover { background: var(--bg-color); border-color: var(--primary-color); color: var(--primary-color); }
+        .expand-btn.expanded { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btn { padding: 6px 12px; font-size: 13px; border-radius: 6px; background: var(--bg-color); color: var(--text-primary); border: none; cursor: pointer; }
+        .action-btn:hover { background: #e5e7eb; }
+        .action-btn.edit { background: var(--primary-color); color: white; }
+        .action-btn.delete { background: #fee2e2; color: #dc2626; }
+        .action-btn.delete:hover { background: #fecaca; }
+        
+        /* Expanded Row Details */
+        .expanded-details { background: #f9fafb; padding: 24px; }
+        .details-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .detail-section { }
+        .detail-section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px; }
+        .detail-item { margin-bottom: 16px; }
+        .detail-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+        .detail-value { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+        
+        .kyc-documents { display: flex; gap: 12px; flex-wrap: wrap; }
+        .kyc-doc-item { display: flex; align-items: center; gap: 8px; padding: 12px; background: white; border: 1px solid var(--border-color); border-radius: 8px; }
+        .kyc-doc-icon { width: 32px; height: 32px; background: #dbeafe; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #2563eb; }
+        .kyc-doc-info { }
+        .kyc-doc-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+        .kyc-doc-status { font-size: 11px; color: var(--text-secondary); }
+        .kyc-doc-view { padding: 4px 8px; font-size: 11px; border-radius: 4px; background: var(--bg-color); color: var(--primary-color); text-decoration: none; }
+        
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--border-color); }
+        .pagination-info { font-size: 14px; color: var(--text-secondary); }
+        .pagination-btns { display: flex; gap: 8px; }
+        .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 8px; background: white; cursor: pointer; font-size: 14px; }
+        .page-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-placeholder">RAGHAVA ENGG</span></div>
+        <nav class="sidebar-nav">
+            <a href="02-dashboard.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="06-job-orders.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Job Orders
+            </a>
+            <a href="03-items.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                Consumer Orders
+            </a>
+            <a href="05-workforce-management.html" class="nav-item active">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                Workforce
+            </a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <header class="topbar">
+            <h1 class="page-title">Workforce Management</h1>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline">Export</button>
+                <button class="btn btn-primary" onclick="alert('Add New Worker')">+ Add Worker</button>
+            </div>
+        </header>
+        
+        <div class="content-area">
+            <div class="filters-bar">
+                <div class="search-box">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" placeholder="Search by name, ID, phone...">
+                </div>
+                <select class="filter-select">
+                    <option>All Status</option>
+                    <option>Active</option>
+                    <option>Inactive</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Departments</option>
+                    <option>Production</option>
+                    <option>Assembly</option>
+                    <option>Quality</option>
+                    <option>Maintenance</option>
+                </select>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"></th>
+                            <th>Worker</th>
+                            <th>Employee ID</th>
+                            <th>Department</th>
+                            <th>Attendance</th>
+                            <th>Overtime</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <button class="expand-btn" onclick="toggleExpand(this)">▼</button>
+                            </td>
+                            <td>
+                                <div class="worker-cell">
+                                    <div class="worker-avatar">RK</div>
+                                    <div class="worker-info">
+                                        <div class="worker-name">Rajesh Kumar</div>
+                                        <div class="worker-id">Worker #001</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>EMP-001</td>
+                            <td>Production</td>
+                            <td>
+                                <span class="attendance-badge good">30/30</span>
+                            </td>
+                            <td>
+                                <span class="overtime-badge">5 days</span>
+                            </td>
+                            <td><span class="badge badge-active">Active</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit worker')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete worker')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="expanded-row" style="display: none;">
+                            <td colspan="8">
+                                <div class="expanded-details">
+                                    <div class="details-grid">
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Personal Information</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Full Name</div>
+                                                <div class="detail-value">Rajesh Kumar</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Phone Number</div>
+                                                <div class="detail-value">+91 98765 43210</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Email</div>
+                                                <div class="detail-value">rajesh.kumar@example.com</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Date of Birth</div>
+                                                <div class="detail-value">15 Jan 1990</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Address</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Address Line 1</div>
+                                                <div class="detail-value">123, Industrial Area</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Address Line 2</div>
+                                                <div class="detail-value">Near ABC Factory</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">City, State, PIN</div>
+                                                <div class="detail-value">Mumbai, Maharashtra - 400001</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Employment Details</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Employee ID</div>
+                                                <div class="detail-value">EMP-001</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Department</div>
+                                                <div class="detail-value">Production</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Designation</div>
+                                                <div class="detail-value">Senior Worker</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Joining Date</div>
+                                                <div class="detail-value">01 Jan 2020</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Attendance & Overtime</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Current Month Attendance</div>
+                                                <div class="detail-value">30/30 days</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Overtime Days (This Month)</div>
+                                                <div class="detail-value">5 days</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Total Overtime Hours</div>
+                                                <div class="detail-value">40 hours</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+                                        <div class="detail-section-title">KYC Documents</div>
+                                        <div class="kyc-documents" style="margin-top: 12px;">
+                                            <div class="kyc-doc-item">
+                                                <div class="kyc-doc-icon">🆔</div>
+                                                <div class="kyc-doc-info">
+                                                    <div class="kyc-doc-name">Aadhar Card</div>
+                                                    <div class="kyc-doc-status">Uploaded on 15 Jan 2020</div>
+                                                </div>
+                                                <a href="#" class="kyc-doc-view">View</a>
+                                            </div>
+                                            <div class="kyc-doc-item">
+                                                <div class="kyc-doc-icon">📄</div>
+                                                <div class="kyc-doc-info">
+                                                    <div class="kyc-doc-name">PAN Card</div>
+                                                    <div class="kyc-doc-status">Uploaded on 15 Jan 2020</div>
+                                                </div>
+                                                <a href="#" class="kyc-doc-view">View</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td>
+                                <button class="expand-btn" onclick="toggleExpand(this)">▼</button>
+                            </td>
+                            <td>
+                                <div class="worker-cell">
+                                    <div class="worker-avatar">PS</div>
+                                    <div class="worker-info">
+                                        <div class="worker-name">Priya Sharma</div>
+                                        <div class="worker-id">Worker #002</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>EMP-002</td>
+                            <td>Assembly</td>
+                            <td>
+                                <span class="attendance-badge warning">28/30</span>
+                            </td>
+                            <td>
+                                <span class="overtime-badge">2 days</span>
+                            </td>
+                            <td><span class="badge badge-active">Active</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit worker')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete worker')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="expanded-row" style="display: none;">
+                            <td colspan="8">
+                                <div class="expanded-details">
+                                    <div class="details-grid">
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Personal Information</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Full Name</div>
+                                                <div class="detail-value">Priya Sharma</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Phone Number</div>
+                                                <div class="detail-value">+91 98765 43211</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Email</div>
+                                                <div class="detail-value">priya.sharma@example.com</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Date of Birth</div>
+                                                <div class="detail-value">22 Mar 1992</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Address</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Address Line 1</div>
+                                                <div class="detail-value">456, Workers Colony</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Address Line 2</div>
+                                                <div class="detail-value">Block B, Unit 5</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">City, State, PIN</div>
+                                                <div class="detail-value">Mumbai, Maharashtra - 400002</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Employment Details</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Employee ID</div>
+                                                <div class="detail-value">EMP-002</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Department</div>
+                                                <div class="detail-value">Assembly</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Designation</div>
+                                                <div class="detail-value">Worker</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Joining Date</div>
+                                                <div class="detail-value">15 Mar 2021</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Attendance & Overtime</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Current Month Attendance</div>
+                                                <div class="detail-value">28/30 days</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Overtime Days (This Month)</div>
+                                                <div class="detail-value">2 days</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Total Overtime Hours</div>
+                                                <div class="detail-value">16 hours</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+                                        <div class="detail-section-title">KYC Documents</div>
+                                        <div class="kyc-documents" style="margin-top: 12px;">
+                                            <div class="kyc-doc-item">
+                                                <div class="kyc-doc-icon">🆔</div>
+                                                <div class="kyc-doc-info">
+                                                    <div class="kyc-doc-name">Aadhar Card</div>
+                                                    <div class="kyc-doc-status">Uploaded on 15 Mar 2021</div>
+                                                </div>
+                                                <a href="#" class="kyc-doc-view">View</a>
+                                            </div>
+                                            <div class="kyc-doc-item">
+                                                <div class="kyc-doc-icon">📄</div>
+                                                <div class="kyc-doc-info">
+                                                    <div class="kyc-doc-name">PAN Card</div>
+                                                    <div class="kyc-doc-status">Uploaded on 15 Mar 2021</div>
+                                                </div>
+                                                <a href="#" class="kyc-doc-view">View</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td>
+                                <button class="expand-btn" onclick="toggleExpand(this)">▼</button>
+                            </td>
+                            <td>
+                                <div class="worker-cell">
+                                    <div class="worker-avatar">AM</div>
+                                    <div class="worker-info">
+                                        <div class="worker-name">Amit Mehta</div>
+                                        <div class="worker-id">Worker #003</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>EMP-003</td>
+                            <td>Quality</td>
+                            <td>
+                                <span class="attendance-badge poor">25/30</span>
+                            </td>
+                            <td>
+                                <span class="overtime-badge">0 days</span>
+                            </td>
+                            <td><span class="badge badge-active">Active</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit worker')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete worker')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="expanded-row" style="display: none;">
+                            <td colspan="8">
+                                <div class="expanded-details">
+                                    <div class="details-grid">
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Personal Information</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Full Name</div>
+                                                <div class="detail-value">Amit Mehta</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Phone Number</div>
+                                                <div class="detail-value">+91 98765 43212</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Email</div>
+                                                <div class="detail-value">amit.mehta@example.com</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Date of Birth</div>
+                                                <div class="detail-value">10 May 1988</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Address</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Address Line 1</div>
+                                                <div class="detail-value">789, Main Street</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Address Line 2</div>
+                                                <div class="detail-value">Near XYZ Market</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">City, State, PIN</div>
+                                                <div class="detail-value">Pune, Maharashtra - 411001</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Employment Details</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Employee ID</div>
+                                                <div class="detail-value">EMP-003</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Department</div>
+                                                <div class="detail-value">Quality</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Designation</div>
+                                                <div class="detail-value">Quality Inspector</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Joining Date</div>
+                                                <div class="detail-value">01 Jun 2019</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Attendance & Overtime</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Current Month Attendance</div>
+                                                <div class="detail-value">25/30 days</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Overtime Days (This Month)</div>
+                                                <div class="detail-value">0 days</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Total Overtime Hours</div>
+                                                <div class="detail-value">0 hours</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+                                        <div class="detail-section-title">KYC Documents</div>
+                                        <div class="kyc-documents" style="margin-top: 12px;">
+                                            <div class="kyc-doc-item">
+                                                <div class="kyc-doc-icon">🆔</div>
+                                                <div class="kyc-doc-info">
+                                                    <div class="kyc-doc-name">Aadhar Card</div>
+                                                    <div class="kyc-doc-status">Uploaded on 01 Jun 2019</div>
+                                                </div>
+                                                <a href="#" class="kyc-doc-view">View</a>
+                                            </div>
+                                            <div class="kyc-doc-item">
+                                                <div class="kyc-doc-icon">📄</div>
+                                                <div class="kyc-doc-info">
+                                                    <div class="kyc-doc-name">PAN Card</div>
+                                                    <div class="kyc-doc-status">Uploaded on 01 Jun 2019</div>
+                                                </div>
+                                                <a href="#" class="kyc-doc-view">View</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td>
+                                <button class="expand-btn" onclick="toggleExpand(this)">▼</button>
+                            </td>
+                            <td>
+                                <div class="worker-cell">
+                                    <div class="worker-avatar">SK</div>
+                                    <div class="worker-info">
+                                        <div class="worker-name">Sunil Kulkarni</div>
+                                        <div class="worker-id">Worker #004</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>EMP-004</td>
+                            <td>Maintenance</td>
+                            <td>
+                                <span class="attendance-badge good">30/30</span>
+                            </td>
+                            <td>
+                                <span class="overtime-badge">8 days</span>
+                            </td>
+                            <td><span class="badge badge-active">Active</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="alert('Edit worker')">Edit</button>
+                                    <button class="action-btn delete" onclick="alert('Delete worker')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="expanded-row" style="display: none;">
+                            <td colspan="8">
+                                <div class="expanded-details">
+                                    <div class="details-grid">
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Personal Information</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Full Name</div>
+                                                <div class="detail-value">Sunil Kulkarni</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Phone Number</div>
+                                                <div class="detail-value">+91 98765 43213</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Email</div>
+                                                <div class="detail-value">sunil.kulkarni@example.com</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Date of Birth</div>
+                                                <div class="detail-value">05 Aug 1985</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Address</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Address Line 1</div>
+                                                <div class="detail-value">321, Tech Park Road</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Address Line 2</div>
+                                                <div class="detail-value">Building C, Flat 12</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">City, State, PIN</div>
+                                                <div class="detail-value">Bangalore, Karnataka - 560001</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Employment Details</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Employee ID</div>
+                                                <div class="detail-value">EMP-004</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Department</div>
+                                                <div class="detail-value">Maintenance</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Designation</div>
+                                                <div class="detail-value">Maintenance Technician</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Joining Date</div>
+                                                <div class="detail-value">10 Sep 2018</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-section">
+                                            <div class="detail-section-title">Attendance & Overtime</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Current Month Attendance</div>
+                                                <div class="detail-value">30/30 days</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Overtime Days (This Month)</div>
+                                                <div class="detail-value">8 days</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">Total Overtime Hours</div>
+                                                <div class="detail-value">64 hours</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+                                        <div class="detail-section-title">KYC Documents</div>
+                                        <div class="kyc-documents" style="margin-top: 12px;">
+                                            <div class="kyc-doc-item">
+                                                <div class="kyc-doc-icon">🆔</div>
+                                                <div class="kyc-doc-info">
+                                                    <div class="kyc-doc-name">Aadhar Card</div>
+                                                    <div class="kyc-doc-status">Uploaded on 10 Sep 2018</div>
+                                                </div>
+                                                <a href="#" class="kyc-doc-view">View</a>
+                                            </div>
+                                            <div class="kyc-doc-item">
+                                                <div class="kyc-doc-icon">📄</div>
+                                                <div class="kyc-doc-info">
+                                                    <div class="kyc-doc-name">PAN Card</div>
+                                                    <div class="kyc-doc-status">Uploaded on 10 Sep 2018</div>
+                                                </div>
+                                                <a href="#" class="kyc-doc-view">View</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <span class="pagination-info">Showing 1 to 4 of 24 workers</span>
+                    <div class="pagination-btns">
+                        <button class="page-btn">«</button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <button class="page-btn">...</button>
+                        <button class="page-btn">6</button>
+                        <button class="page-btn">»</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        function toggleExpand(btn) {
+            const row = btn.closest('tr');
+            const expandedRow = row.nextElementSibling;
+            
+            if (expandedRow && expandedRow.classList.contains('expanded-row')) {
+                const isExpanded = expandedRow.style.display !== 'none';
+                expandedRow.style.display = isExpanded ? 'none' : 'table-row';
+                btn.classList.toggle('expanded', !isExpanded);
+                btn.textContent = isExpanded ? '▼' : '▲';
+            }
+        }
+    </script>
+</body>
+</html>
