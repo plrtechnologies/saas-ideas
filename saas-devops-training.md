@@ -1,5 +1,5 @@
 # DevOps Training Resources
-## Legal Opinion SaaS Platform - Team Training Guide
+##  Team Training Guide
 
 **Project:** Legal Opinion SaaS Platform  
 **Document Version:** 1.0  
